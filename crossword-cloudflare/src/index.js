@@ -4,7 +4,7 @@ const err=(message,status=400)=>json({error:message},status);
 const hex=bytes=>Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');
 const rand=()=>crypto.randomUUID();
 const sha=async text=>hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)));
-async function pbkdf2(password,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);return hex(await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:210000,hash:'SHA-256'},k,256));}
+async function pbkdf2(password,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);return hex(await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:100000,hash:'SHA-256'},k,256));}
 const cookie=token=>`session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`;
 const clearCookie='session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0';
 async function current(req,env){const token=(req.headers.get('cookie')||'').match(/(?:^|;\s*)session=([a-f0-9-]+)/)?.[1];if(!token)return null;return env.DB.prepare('SELECT users.id,users.email,sessions.id AS sid FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token_hash=? AND sessions.expires_at>unixepoch()').bind(await sha(token)).first();}
