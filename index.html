@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вестник „Трета Възраст“ — кръстословици</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=PT+Sans+Narrow:wght@400;700&family=PT+Sans:wght@400;700&family=PT+Serif:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f5f1e8;
+    --ink: #1c1b19;
+    --muted: #6d675c;
+    --line: #1c1b19;
+    --clue: #e6e0d1;
+    --clue-active: #f2d58a;
+    --word: #fbefc4;
+    --cur: #ffd34d;
+    --hint: #1f5fae;
+    --accent: #b8321f;
+    --cell: 56px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body { font-family: 'PT Sans', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 14px 12px 40px; }
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    border-bottom: 3px double var(--ink); padding-bottom: 8px; }
+  h1 { font-family: 'PT Serif', Georgia, serif; font-size: 34px; margin: 0; letter-spacing: .5px; line-height: 1; }
+  h1 small { display: block; font-family: 'PT Sans Narrow', sans-serif; font-weight: 400; font-size: 13px;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+  .sizes { display: flex; border: 1.5px solid var(--ink); border-radius: 6px; overflow: hidden; }
+  .sizes button { border: 0; background: transparent; padding: 7px 12px; font: 700 14px 'PT Sans Narrow', sans-serif;
+    text-transform: uppercase; letter-spacing: .8px; cursor: pointer; color: var(--ink); }
+  .sizes button + button { border-left: 1.5px solid var(--ink); }
+  .sizes button.on { background: var(--ink); color: var(--paper); }
+
+  .stats { display: flex; gap: 8px; margin: 12px 0 10px; flex-wrap: wrap; }
+  .stat { flex: 1 1 0; min-width: 92px; border: 1.5px solid var(--ink); border-radius: 6px; padding: 6px 10px; background: #fffdf8; }
+  .stat .lbl { font: 700 11px 'PT Sans Narrow', sans-serif; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); }
+  .stat .val { font: 700 22px 'PT Sans', sans-serif; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .dots { display: inline-flex; gap: 5px; vertical-align: middle; }
+  .dots i { width: 13px; height: 13px; border-radius: 50%; background: var(--hint); display: inline-block; }
+  .dots i.off { background: transparent; border: 1.5px solid #b5ad9d; }
+
+  .cluebar { min-height: 46px; display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--ink);
+    background: var(--ink); color: var(--paper); border-radius: 6px; padding: 8px 12px; margin-bottom: 12px;
+    font: 700 17px 'PT Sans Narrow', sans-serif; text-transform: uppercase; letter-spacing: .5px; }
+  .cluebar .arr { font-size: 20px; color: var(--cur); width: 18px; text-align: center; }
+  .cluebar .len { margin-left: auto; font-weight: 400; opacity: .7; font-size: 14px; white-space: nowrap; text-transform: none; }
+
+  .board-wrap { position: relative; display: flex; justify-content: center; overflow-x: auto; }
+  .board { display: grid; border: 2.5px solid var(--line); background: var(--line); gap: 1px; user-select: none; touch-action: manipulation; }
+  .cell { width: var(--cell); height: var(--cell); background: #fff; position: relative; }
+  .cell.l { cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font: 700 calc(var(--cell) * .56) 'PT Sans', sans-serif; text-transform: uppercase; }
+  .cell.l.word { background: var(--word); }
+  .cell.l.cur { background: var(--cur); }
+  .cell.l.hinted { color: var(--hint); }
+  .cell.l.hinted::after { content: ''; position: absolute; right: 3px; top: 3px; width: 0; height: 0;
+    border-top: 7px solid var(--hint); border-left: 7px solid transparent; }
+  .cell.l.bad { color: var(--accent); }
+  .cell.c { background: var(--clue); cursor: pointer; display: flex; flex-direction: column; overflow: visible; }
+  .cell.c.empty { background: #cfc8b6; cursor: default; }
+  .cell.c .part { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 1px 2px; font: 700 9px/1.02 'PT Sans Narrow', sans-serif; text-transform: uppercase;
+    hyphens: auto; -webkit-hyphens: auto; overflow-wrap: anywhere; letter-spacing: -.1px; }
+  .cell.c .part.act { background: var(--clue-active); }
+  .cell.c .part + .part { border-top: 1px solid #9c9583; }
+  .cell.c .part span { display: block; max-width: 100%; }
+  .arrow { position: absolute; width: 0; height: 0; z-index: 3; pointer-events: none; }
+  .arrow.R { right: -6px; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid var(--ink); transform: translateY(-50%); }
+  .arrow.D { bottom: -6px; left: 50%; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid var(--ink); transform: translateX(-50%); }
+
+  .paused .board .cell.l { color: transparent !important; }
+  .paused .board { filter: blur(3px); }
+  .overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; z-index: 5; }
+  .paused .overlay.pause { display: flex; }
+  .overlay button { font-size: 18px; padding: 12px 22px; }
+
+  .controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+  .btn { border: 1.5px solid var(--ink); background: #fffdf8; color: var(--ink); border-radius: 6px; padding: 9px 16px;
+    font: 700 15px 'PT Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+  .btn:hover { background: #fff; }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--ink); color: var(--paper); }
+  .btn.hint { border-color: var(--hint); color: var(--hint); }
+  .btn.hint .n { background: var(--hint); color: #fff; border-radius: 10px; padding: 0 7px; font-size: 13px; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .msg { text-align: center; min-height: 22px; margin-top: 10px; font-weight: 700; color: var(--accent); }
+
+  .kbd { margin: 14px auto 0; max-width: 560px; display: none; }
+  .kbd.show { display: block; }
+  .kbd .row { display: flex; gap: 4px; justify-content: center; margin-bottom: 5px; }
+  .kbd button { flex: 1 1 0; max-width: 44px; height: 44px; border: 1px solid #a8a090; border-radius: 5px; background: #fffdf8;
+    font: 700 17px 'PT Sans', sans-serif; color: var(--ink); padding: 0; cursor: pointer; }
+  .kbd button:active { background: var(--cur); }
+  .kbd button.wide { max-width: 64px; flex: 1.5 1 0; }
+
+  .help { margin-top: 22px; font-size: 13.5px; color: var(--muted); line-height: 1.5; border-top: 1px solid #cfc8b6; padding-top: 10px; }
+  .help b { color: var(--ink); }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(28,27,25,.55); display: none; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal-bg.show { display: flex; }
+  .modal { background: var(--paper); border: 2.5px solid var(--ink); border-radius: 10px; padding: 22px 22px 18px; max-width: 360px; width: 100%; text-align: center; }
+  .modal h2 { font-family: 'PT Serif', serif; margin: 0 0 8px; font-size: 26px; }
+  .modal p { margin: 6px 0; }
+  .modal .big { font: 700 40px 'PT Sans', sans-serif; font-variant-numeric: tabular-nums; }
+  .modal .rec { color: var(--accent); font-weight: 700; }
+  .modal .row { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .loading { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(245,241,232,.85); z-index: 6; font-weight: 700; }
+  .loading.show { display: flex; }
+
+
+  /* Разлистване при преминаване към нова кръстословица. */
+  .board-wrap { perspective: 1300px; isolation: isolate; }
+  .page-turn-sheet { position: absolute; top: 0; left: 50%; z-index: 8;
+    transform-origin: left center; pointer-events: none; will-change: transform, opacity;
+    box-shadow: 12px 8px 20px rgba(28,27,25,.18);
+    animation: crossword-page-turn .68s cubic-bezier(.35,.08,.25,1) forwards; }
+  .board.page-reveal { animation: crossword-page-reveal .55s ease-out both; }
+  @keyframes crossword-page-turn {
+    0% { transform: translateX(-50%) rotateY(0deg); opacity: 1; }
+    65% { opacity: .94; }
+    100% { transform: translateX(-50%) rotateY(-100deg); opacity: 0; }
+  }
+  @keyframes crossword-page-reveal {
+    from { opacity: .35; filter: brightness(.94); }
+    to { opacity: 1; filter: brightness(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .page-turn-sheet, .board.page-reveal { animation: none; }
+    .page-turn-sheet { display: none; }
+  }
+
+  @media (max-width: 520px) {
+    h1 { font-size: 27px; }
+    .stats { gap: 5px; }
+    .stat { min-width: 0; padding: 5px 7px; }
+    .stat .lbl { font-size: 10px; letter-spacing: .6px; }
+    .stat .val { font-size: 18px; }
+    .dots i { width: 11px; height: 11px; }
+    .cluebar { font-size: 15px; }
+    .btn { padding: 8px 12px; font-size: 14px; }
+  }
+</style>
+<style>.auth-gate{position:fixed;inset:0;background:#f5f1e8;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}.auth-gate[hidden],.account-bar[hidden]{display:none}.auth-panel{width:min(100%,390px);padding:28px;border:2px solid #1c1b19;border-radius:10px;background:#fffdf8;text-align:center;font-family:system-ui}.auth-panel input{display:block;width:100%;padding:12px;margin:10px 0;border:1px solid #888;border-radius:5px;font-size:16px}.auth-panel button,.account-bar button{padding:10px 16px;border-radius:5px;cursor:pointer}.auth-panel #authSubmit{width:100%;background:#1c1b19;color:white;border:0}.auth-panel #authSwitch{border:0;background:none;text-decoration:underline}.auth-panel #authError{color:#b8321f}.account-bar{max-width:900px;margin:8px auto;display:flex;gap:12px;align-items:center;justify-content:flex-end;padding:0 12px;font:14px system-ui}.account-bar #syncStatus{color:#6d675c}</style></head>
+<body><div id="authGate" class="auth-gate"><div class="auth-panel"><h2>Кръстословици</h2><p>Влезте в профила си, за да запазвате прогреса си на всички устройства.</p><form id="authForm"><input id="authEmail" type="email" placeholder="Имейл" autocomplete="email" required maxlength="254"><input id="authPassword" type="password" placeholder="Парола (поне 10 символа)" autocomplete="current-password" required minlength="10"><button id="authSubmit" type="submit">Вход</button></form><button id="authSwitch" type="button">Нямате профил? Регистрация</button><p id="authError" role="alert"></p></div></div><div id="accountBar" class="account-bar" hidden><span id="accountName"></span><button id="cloudSaveBtn" type="button">☁ Запази</button><button id="logoutBtn">Изход</button><span id="syncStatus" aria-live="polite"></span></div>
+<div class="wrap" id="app">
+  <header>
+    <h1>Вестник „Трета Възраст“<small>Скандинавски кръстословици</small></h1>
+    <div class="sizes" id="sizes">
+      <button data-size="s">Малка</button>
+      <button data-size="m">Средна</button>
+      <button data-size="l">Голяма</button>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="lbl">Време</div><div class="val" id="time">00:00</div></div>
+    <div class="stat"><div class="lbl">Рекорд</div><div class="val" id="best">—</div></div>
+    <div class="stat"><div class="lbl">Подсказки</div><div class="val"><span class="dots" id="dots"></span></div></div>
+    <div class="stat"><div class="lbl">Решени</div><div class="val" id="solved">0</div></div>
+  </div>
+
+  <div class="cluebar" id="cluebar"><span class="arr" id="clueArr"></span><span id="clueText">Изберете квадратче</span><span class="len" id="clueLen"></span></div>
+
+  <div class="board-wrap" id="boardWrap">
+    <div class="board" id="board"></div>
+    <div class="overlay pause"><button class="btn primary" id="resumeBtn">▶ Продължи</button></div>
+    <div class="loading" id="loading">Подреждам думите…</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn hint" id="hintBtn">💡 Подсказка <span class="n" id="hintN">3</span></button>
+    <button class="btn" id="pauseBtn">Ⅱ Пауза</button>
+    <button class="btn" id="restartBtn">↺ Рестарт</button>
+    <button class="btn primary" id="newBtn">Нова кръстословица</button>
+    <button class="btn" id="kbdBtn" title="Екранна клавиатура">⌨</button>
+  </div>
+  <div class="msg" id="msg"></div>
+
+  <div class="kbd" id="kbd"></div>
+
+  <div class="help">
+    <b>Как се играе:</b> определенията са в сивите квадратчета, а стрелката показва накъде върви думата: <b>▸</b> надясно, <b>▾</b> надолу.
+    Цъкнете в квадратче и пишете. Второ цъкване сменя посоката. Можете да пишете и с латинска клавиатура (фонетично: q→Я, w→В, y→Ъ, [→Ш, ]→Щ, `→Ч, \→Ю, x→Ь).
+    Имате <b>3 подсказки</b> за една игра, всяка открива една буква. <b>Рестарт</b> изчиства решетката, часовника и подсказките.
+  </div>
+</div>
+
+<div class="modal-bg" id="winModal">
+  <div class="modal">
+    <h2>Браво! 🎉</h2>
+    <p>Решихте кръстословицата за</p>
+    <div class="big" id="winTime">00:00</div>
+    <p id="winRec"></p>
+    <p id="winHints" style="color:var(--muted)"></p>
+    <div class="row"><button class="btn primary" id="winNew">Нова кръстословица</button><button class="btn" id="winClose">Затвори</button></div>
+  </div>
+</div>
+<div class="modal-bg" id="confirmModal">
+  <div class="modal">
+    <h2 id="confTitle">Рестарт?</h2>
+    <p id="confText">Всички букви, часовникът и подсказките ще бъдат нулирани.</p>
+    <div class="row"><button class="btn primary" id="confYes">Да</button><button class="btn" id="confNo">Отказ</button></div>
+  </div>
+</div>
+
+<script src="/dictionary.js"></script>
+<script>
+// Генератор на скандинавски кръстословици
+function makeRng(seed) {
+  let s = seed >>> 0 || 1;
+  return function () {
+    s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0;
+    return s / 4294967296;
+  };
+}
+
+function buildDict(text) {
+  const clues = {};
+  const root = { c: {}, w: false };
+  for (const line of text.trim().split('\n')) {
+    const i = line.indexOf('=');
+    if (i < 0) continue;
+    const w = line.slice(0, i).trim();
+    clues[w] = line.slice(i + 1).split(';').map(s => s.trim()).filter(Boolean);
+    let n = root;
+    for (const ch of w) { n = n.c[ch] || (n.c[ch] = { c: {}, w: false }); }
+    n.w = true;
+  }
+  return { root, clues };
+}
+
+function computeMasks(n) {
+  // n.m: битова маска на възможните оставащи дължини (0..31) до край на дума
+  let m = n.w ? 1 : 0, k = n.w ? 1 : 0;
+  for (const ch in n.c) { m |= computeMasks(n.c[ch]) << 1; k += n.c[ch].k; }
+  n.m = m >>> 0; n.k = k;
+  return n.m;
+}
+
+function generate(dict, W, H, opts) {
+  opts = opts || {};
+  const rng = makeRng(opts.seed || (Math.random() * 4294967296));
+  const maxSingles = opts.maxSingles != null ? opts.maxSingles : 2;
+  const maxSteps = opts.maxSteps || 20000;
+  const clueBias = opts.clueBias != null ? opts.clueBias : 0.2;
+  const maxBorderEmpty = opts.maxBorderEmpty != null ? opts.maxBorderEmpty : 3;
+  const root = dict.root;
+  if (root.m === undefined) computeMasks(root);
+  const CLUE = '#';
+  const g = [], must = [], sH = [], sV = [];
+  for (let r = 0; r < H; r++) {
+    g.push(new Array(W).fill(null)); must.push(new Array(W).fill(0));
+    sH.push(new Array(W).fill(false)); sV.push(new Array(W).fill(false));
+  }
+  for (let c = 0; c < W; c++) g[0][c] = CLUE;
+  for (let r = 0; r < H; r++) g[r][0] = CLUE;
+  const used = new Set();
+  let singles = 0, steps = 0, borderEmpty = 0;
+  const cells = [];
+  for (let r = 1; r < H; r++) for (let c = 1; c < W; c++) cells.push([r, c]);
+  const isClue = (r, c) => g[r][c] === CLUE;
+  function hPre(r, c) { let s = ''; for (let x = c - 1; x >= 0 && g[r][x] !== CLUE; x--) s = g[r][x] + s; return s; }
+  function vPre(r, c) { let s = ''; for (let y = r - 1; y >= 0 && g[y][c] !== CLUE; y--) s = g[y][c] + s; return s; }
+  function node(p) { let n = root; for (const ch of p) { n = n.c[ch]; if (!n) return null; } return n; }
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  // може ли дума с този префикс (възел n) да завърши в рамките на room допълнителни клетки
+  function fits(n, room) { return (n.m & ((2 << room) - 1)) !== 0; }
+  // определение в (r,c) губи посока: проверка/изискване за другата
+  function rightOk(r, c) { return c + 2 < W && g[r][c + 1] !== CLUE && g[r][c + 1] !== null && g[r][c + 2] !== CLUE && g[r][c + 2] !== null; }
+
+  function finalCheck() {
+    const cover = [];
+    for (let r = 0; r < H; r++) cover.push(new Array(W).fill(0));
+    let be = 0;
+    for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+      if (g[r][c] !== CLUE) continue;
+      let n = 0;
+      let x = c + 1; while (x < W && g[r][x] !== CLUE) x++;
+      if (x - c - 1 >= 2) { n++; for (let k = c + 1; k < x; k++) cover[r][k]++; }
+      let y = r + 1; while (y < H && g[y][c] !== CLUE) y++;
+      if (y - r - 1 >= 2) { n++; for (let k = r + 1; k < y; k++) cover[k][c]++; }
+      if (n === 0) {
+        if (r === 0 && c === 0) continue;
+        if (r === 0 || c === 0) be++; else return false;
+      }
+    }
+    if (be > maxBorderEmpty) return false;
+    for (let r = 1; r < H; r++) for (let c = 1; c < W; c++) if (g[r][c] !== CLUE && !cover[r][c]) return false;
+    return true;
+  }
+
+  const idx = (r, c) => (r >= 1 && c >= 1 && r < H && c < W) ? (r - 1) * (W - 1) + (c - 1) : -1;
+  function localConf(r, c) {
+    const s = new Set();
+    for (let x = c - 1; x >= 1; x--) { s.add(idx(r, x)); if (g[r][x] === CLUE) break; }
+    for (let y = r - 1; y >= 1; y--) { s.add(idx(y, c)); if (g[y][c] === CLUE) break; }
+    for (let y = Math.max(1, r - 2); y < r; y++) for (let x = Math.max(1, c - 2); x <= Math.min(W - 1, c + 2); x++) s.add(idx(y, x));
+    for (let x = Math.max(1, c - 2); x < c; x++) s.add(idx(r, x));
+    s.delete(-1);
+    return s;
+  }
+  const ALL = { all: true };
+  function dfs(i) {
+    if (++steps > maxSteps) return ALL;
+    if (i === cells.length) return finalCheck() ? true : ALL;
+    const [r, c] = cells[i];
+    const hp = hPre(r, c), vp = vPre(r, c);
+    const nh = node(hp), nv = node(vp);
+    const order = [];
+    if (nh && nv) {
+      for (const ch in nh.c) {
+        const a = nh.c[ch], b = nv.c[ch];
+        if (!b) continue;
+        if (!fits(a, W - 1 - c) || !fits(b, H - 1 - r)) continue;
+        order.push([ch, Math.pow(rng(), 1 / Math.sqrt(a.k * b.k))]);
+      }
+      order.sort((x, y) => y[1] - x[1]);
+      for (let k = 0; k < order.length; k++) order[k] = order[k][0];
+    }
+    let clueOk = !must[r][c] && !(r === 1 && c === 1) && !(r === H - 1 && c === W - 1);
+    if (clueOk && isClue(r - 1, c) && isClue(r, c - 1) && isClue(r - 1, c - 1)) clueOk = false;
+    if (clueOk && hp.length >= 2 && (!nh || !nh.w || used.has(hp))) clueOk = false;
+    if (clueOk && vp.length >= 2 && (!nv || !nv.w || used.has(vp) || hp === vp)) clueOk = false;
+    if (clueOk && hp.length === 1 && vp.length === 1 && singles + 2 > maxSingles) clueOk = false;
+    if (clueOk) { if (rng() < clueBias) order.unshift(CLUE); else order.push(CLUE); }
+
+    const conf = new Set(); let allConf = false;
+    for (const ch of order) {
+      const undo = [];
+      let ok = true, addS = 0, addB = 0;
+      g[r][c] = ch;
+      const needDown = (rr, cc) => { // вътрешно определение (rr,cc) трябва да има дума надолу
+        if (rr + 2 >= H) return false;
+        must[rr + 1][cc]++; must[rr + 2][cc]++;
+        undo.push(() => { must[rr + 1][cc]--; must[rr + 2][cc]--; });
+        return true;
+      };
+      const singleH = (rr, cc) => { // буква (rr,cc) е самотна хоризонтално
+        if (sV[rr][cc]) return false;
+        sH[rr][cc] = true; addS++; undo.push(() => { sH[rr][cc] = false; });
+        const pc = cc - 1; // определението преди нея губи „надясно“
+        if (pc === 0) { addB++; return true; }
+        if (isClue(rr - 1, pc) || rr === H - 1) {
+          // няма път надолу? проверка дали надолу е възможно
+          if (rr + 2 >= H) return false;
+        }
+        return needDown(rr, pc);
+      };
+      const singleV = (rr, cc) => {
+        if (sH[rr][cc]) return false;
+        sV[rr][cc] = true; addS++; undo.push(() => { sV[rr][cc] = false; });
+        const pr = rr - 1;
+        if (pr === 0) { addB++; return true; }
+        return rightOk(pr, cc);
+      };
+      if (ch === CLUE) {
+        if (hp.length >= 2) { used.add(hp); undo.push(() => used.delete(hp)); }
+        else if (hp.length === 1) ok = singleH(r, c - 1);
+        if (ok && vp.length >= 2) { used.add(vp); undo.push(() => used.delete(vp)); }
+        else if (ok && vp.length === 1) ok = singleV(r - 1, c);
+        if (ok && r === 1) addB++;
+        if (ok && c === 1) addB++;
+        // горе е вътрешно определение -> губи „надолу“
+        if (ok && r - 1 >= 1 && isClue(r - 1, c) && !rightOk(r - 1, c)) ok = false;
+        // отляво е вътрешно определение -> губи „надясно“
+        if (ok && c - 1 >= 1 && isClue(r, c - 1)) ok = needDown(r, c - 1);
+        // определение в последна колона -> надолу; в последен ред -> надясно
+        if (ok && c === W - 1) ok = needDown(r, c);
+        if (ok && r === H - 1) { if (c + 2 >= W) ok = false; else { must[r][c + 1]++; must[r][c + 2]++; undo.push(() => { must[r][c + 1]--; must[r][c + 2]--; }); } }
+      } else {
+        if (c === W - 1) {
+          const w = hp + ch;
+          if (w.length >= 2) { if (!nh.c[ch].w || used.has(w)) ok = false; else { used.add(w); undo.push(() => used.delete(w)); } }
+          else ok = singleH(r, c);
+        }
+        if (ok && r === H - 1) {
+          const w = vp + ch;
+          if (w.length >= 2) { if (!nv.c[ch].w || used.has(w)) ok = false; else { used.add(w); undo.push(() => used.delete(w)); } }
+          else ok = singleV(r, c);
+        }
+      }
+      singles += addS; borderEmpty += addB;
+      let res = null;
+      if (ok && singles <= maxSingles && borderEmpty <= maxBorderEmpty) res = dfs(i + 1);
+      if (res === true) return true;
+      singles -= addS; borderEmpty -= addB;
+      for (let k = undo.length - 1; k >= 0; k--) undo[k]();
+      g[r][c] = null;
+      if (steps > maxSteps) return ALL;
+      if (res === null) { for (const x of localConf(r, c)) conf.add(x); }
+      else if (res === ALL) { allConf = true; }
+      else if (!res.has(i)) { return res; } // скок назад
+      else { for (const x of res) if (x !== i) conf.add(x); }
+    }
+    if (allConf) return ALL;
+    for (const x of localConf(r, c)) conf.add(x);
+    return conf;
+  }
+
+  if (dfs(0) !== true) return null;
+  const entries = [];
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    if (g[r][c] !== CLUE) continue;
+    let x = c + 1; while (x < W && g[r][x] !== CLUE) x++;
+    if (x - c - 1 >= 2) {
+      let w = ''; for (let k = c + 1; k < x; k++) w += g[r][k];
+      entries.push({ r, c, dir: 'R', word: w, sr: r, sc: c + 1, len: x - c - 1 });
+    }
+    let y = r + 1; while (y < H && g[y][c] !== CLUE) y++;
+    if (y - r - 1 >= 2) {
+      let w = ''; for (let k = r + 1; k < y; k++) w += g[k][c];
+      entries.push({ r, c, dir: 'D', word: w, sr: r + 1, sc: c, len: y - r - 1 });
+    }
+  }
+  for (const e of entries) { const cl = dict.clues[e.word]; e.clue = cl[Math.floor(rng() * cl.length)]; }
+  return { W, H, grid: g.map(row => row.slice()), entries, steps };
+}
+
+function generatePuzzle(dict, W, H, opts) {
+  opts = opts || {};
+  const t0 = Date.now();
+  const limit = opts.timeLimit || 6000;
+  let tries = 0;
+  while (Date.now() - t0 < limit) {
+    tries++;
+    const p = generate(dict, W, H, opts);
+    if (p) { p.tries = tries; p.ms = Date.now() - t0; return p; }
+  }
+  return null;
+}
+
+if (typeof module !== 'undefined') module.exports = { buildDict, generate, generatePuzzle };
+
+</script>
+<script>
+// Речникът се зарежда от отделния статичен файл dictionary.js.
+const DICT_TEXT = (window.CROSSWORD_DICTIONARY || []).map(e => e.word + "=" + e.clues.join(";")).join("\n");
+const POOLS = {"s": ["#######|#КОМПАС|#АД#УМ#|#ЛА#МИТ|###РАНА|#ВЕЕ###|#ОМ#ДЯЛ|#ЛИВАДА|#ТРИ#ЕК", "#######|#ГРОЗДЕ|#РУБЛА#|#ЕС#ОКА|#ДЕН#АР|#А#ЛИРА|##ЛОВ##|#ПО#АГА|#ИМ#НОС", "#######|#ИГУМЕН|#Н#МАСА|#ДО#Т##|##ДА#МУ|#МИР#ОХ|#АС#ЕТ#|#НЕ#ХОР|#ЕЙ#ОРЕ", "#######|#ОГРАДА|#ЛОАРА#|#ОБ#АКО|#ВИ##АД|#О#ГОРА|###АХ##|#ФОН#МИ|#АМА#УМ", "#######|#ОВИДИЙ|#ДЕКАР#|#ЕКО#АЗ|#Р#Н#НА|##КАЛ##|#ТА#ИМЕ|#ОРЕ#ОТ|#ПАТ#ЛА", "#######|#КОНГО#|#РА#АРА|#АЗ#МЕД|#КАНА##|###Ю#ЯД|#МУ#ЕРА|#АХ#ЛЕВ|#ТО#АМА", "#######|#П#АНОД|#СОНАТА|#ИСК###|###АХАТ|#ГОРИЛА|#ОСА#Е#|#НЕ#ОКО|#ИМ#БОЙ", "#######|#ЧАДЪР#|#ЕРА#АР|#ЛЕК#ДО|#ОСА#ОС|###РАНА|#ЯД#К##|#КОРОНА|#АМА#ОХ", "#######|#СОМ#ТА|#ЦРУ#РЕ|#ЕК#ВИЦ|#НА#А##|#А#ПРАХ|##ВИ#ДЕ|#НИ#ДАР|#ЕТ#АМА", "#######|#ФОН#ТО|#УХО#ИМ|#Р#Й#Г#|#НЕ#ОАЕ|#АЗ#ДНК|##ЕВА##|#ЕРА#ДО|#СОЛ#ЕТ", "#######|#МИНУТА|#ЕКО#ОХ|#САЩ#РА|#ЕР#ПАТ|#Ц#ВИ##|##МИ#АХ|#ЛИН#РО|#АГА#АР", "#######|#НЕПАЛ#|#ОКА#ОМ|#ЙОН#ТО|####ВОЛ|#МАЛИ##|#ОРЕ#ЯК|#ТЕН#РО|#ОСА#ЕС", "#######|#РЕЧ#ТА|#ОХ#ТОР|#ЙОГА##|###РУСЕ|#ТРИ#АС|#РОГ#Р#|#ОС#ИМЕ|#НА#ЗАР", "#######|#ЕЛА#ЯД|#ЛОМ#НА|#ЕВА#Т#|#К##ЯРЕ|##Ф#ДАР|#ПОЛЕ##|#ЕТА#ПО|#ТОК#ИМ", "#######|#БАЙРОН|#ЯДЕ#ЗА|#Л#М#ОТ|##ТЕ#НО|#КАНА##|#АС#РОГ|#ФОН#ДА|#ЕСЕ#АЗ", "#######|#ШАПКА#|#ЕРА#ГО|#СИН#АС|#ТЯ#Т##|###ИРАН|#НОВИНА|#ОКА#ОТ|#ЙОН#ДО", "#######|#ДО#ИНД|#АКО#АР|#НЕ#ЕТО|#ТА##ОБ|#ЕНОТ##|###РОЗА|#ТОК#ИМ|#ЕТА#ДА", "#######|#ДЕКАР#|#НЛО#ИМ|#КАЛ#ГО|####БАЛ|#КАСА##|#АР#ЛАЕ|#НЕ#ЕКГ|#АС#ТОН", "#######|#ЦАР#ВИ|#ЕЛА#ИЗ|#ЛИ#ЛЕВ|##Б##НО|#ТИК#АР|#Е#ОМ##|#КОЛЕЛО|#ЕС#ЧАЙ", "#######|#ТОП#ФА|#РО##АХ|#ИНД#ЗА|###ВРАТ|#ИВА###|#РА#ПАТ|#АЗ#ИЛИ|#НА#РОК", "#######|#УСТИЕ#|#ЕТО#ТИ|#ФИ#ГАЗ|#АХ#Р##|###КАПА|#КЛИМАТ|#ОАЕ#РО|#ЛЕВ#ИМ", "#######|#ТРОЯН#|#КАЛКАН|#АКО#ТО|#Е#В#ОС|##ЛОС##|#МИ#УХО|#ЕР#ПОД|#ДА#АРА", "#######|#ГОТВАЧ|#НА##ТЕ|#ЯЗОВИР|#ВАР#НЕ|###ИРАН|#МУЗА##|#АХ#НИЛ|#ТО#АМА", "#######|#БОТЕВ#|#АКО#ОМ|#ЛА#НЛО|###Д#АР|#НОВ#НЕ|#ОРЕ###|#ТИ#АЛО|#АЗ#ХИТ", "#######|#ПИСТА#|#ЕТО#РО|#ВАЛ#ЕР|#ЕК#ЕСЕ|#ЦАР###|###ОБЕД|#МАГАРЕ|#ИЗ#ХАН", "#######|#ГЛАВА#|#НА#ИЛИ|#ЯМА#ЕС|#ВАР#ЯК|###ИМ##|#ФЕЯ#ЛИ|#АР#РОВ|#РА#ЕВА", "#######|#УХ#ОМ#|#ЕР#МИТ|#ФА#АРА|#АМИН##|###К#НО|#ЯЗОВИР|#ДОН#ВИ|#ЕВА#АЗ", "#######|#ЛИВАДА|#АВЕЛ##|#КАРЕТА|###ИКАР|#ТОГО##|#ЕРА#ТЕ|#ТИ#РОК|#АЗ#ОКО", "#######|#КАМИЛА|#АРА#АХ|#С#КИВИ|#АС#БАЛ|##КСИ##|#РА#СОЛ|#ЕЛА#РО|#ЧАД#ЕС", "#######|#ЛОЗУНГ|##ЗАХАР|#ПО##ТА|#ИНД#ОМ|###ОТ##|#ОБ#ОСА|#РОД#ИМ|#ЕРА#НА", "#######|#ТОКИО#|#РО#МАК|#ИНД#ЗА|###ОПАЛ|#ГАМА##|#АХ#ТОК|#РИЕ#РЕ|#АЛТ#ЕЙ", "#######|#МОРКОВ|#ОПАЛ##|#МУ#ОРЕ|#АС#НОВ|#####ДА|#РАМО##|#ЕРА#РО|#ЧАЙ#ЕТ", "#######|#ЯЗОВЕЦ|#САХАРА|#П##ЗАР|#ИЗ#А##|#САЩ#ДЕ|##ПЕТЕЛ|#ТА#ИЛИ|#ЯД#КОН", "#######|#СМЕТКА|#ТЪПАН#|#ЕХО#ИМ|#П#САГА|#АС#РАЙ|##ЕРА##|#АЛО#ТЕ|#ЗОВ#ОС", "#######|#ЖИРАФ#|#АКО#ОМ|#БАНСКО|#АРА#УМ|####ОСА|#МЛАД##|#ВЕРИГА|#РЕ#НОС", "#######|#ВАТ#СИ|#АКО#ЕТ|#РОГ#ДА|##РО#ЕК|#ЯД#АМА|#Р#А###|#ЕВРОПА|#МИ#ЙОД", "#######|#АФРИКА|#С#ОМАН|##М##НО|#БОР#АД|#АТОЛ##|#ЛИВАДА|#ЕК#ЛУК|#ТА#ЕХО", "#######|#РЕЧ#СИ|#ИЛИ#ИМ|#МЕЧ#НЕ|#АКО###|####МЕД|#НОВИНА|#ОКА#ОМ|#СОЛ#ТА", "#######|#ГРАДУС|#ООН#ЕТ|#Б#К#ФА|#ИВА#АР|##ЕР###|#КРАТЕР|#АД#ЕТА|#ЛИ#НОЙ", "#######|#ТЕ#ДОМ|#ОСА#МУ|#КЕЙ#АХ|###РОНА|#СМЯХ##|#ТОН#ОС|#ОМ#ЕКО|#ЛА#КОЛ"], "m": ["########|#ТУРЦИЯ#|#ОРЕ#ТРИ|#ГО#ЗАЕМ|#ОКА#К##|###ЛОАРА|#БЕТА#ОХ|#ОМ#ЕК##|#ЗИД#ОДА|#АРА#ЛОС", "########|#РОГ#ЕКГ|#УРОК#ЛА|#СЕНА#ОМ|#ЕЛИН#НА|####А###|#ТИК#ФОН|#АКО#ИВА|#ЛАЛЕ#ЕТ|#КРАК#НО", "########|#ДЕЛО#ОТ|#ИКАР#ПИ|#МОЛИ#Е#|###ЕЗЕРО|#Б###РАЙ|#АДАМ###|#ЛЕД#КОД|#ЕТ#РУСЕ|#ТЕ#ОМАН", "########|#ГРОЗДЕ#|#ЛОС#ЕКО|#ИЗ###РА|#НОТА#АЗ|#АВЕЛ#НА|###НЕ###|#АС#ЯРЕМ|#ГОЛ#ОСА|#АМА#КЕЙ", "########|#ГЕРДАН#|#ЕЛА#НОЩ|#РЕ#КОВЕ|#БНТ#Д##|###РО#АХ|#КРИТ#НИ|#ЛА##ЮГ#|#ИНД#ЛЕВ|#ОАЕ#ИЛИ", "########|#НОС#СПИ|#УСТА#ИМ|#ЛЕЕ#ЯРЕ|#АМПЕР##|###АКОРД|#СИ##СЕЕ|#АКО#Т##|#ГАРА#НО|#АРЕС#ЕТ", "########|#ШАХ#ПЕЕ|#ЕЛА#ИЗ#|#СЕНА#ЕТ|#ТЯ#Р#РО|###М#КОН|#ИЗИДА##|#РЕ#ЕЛЕК|#АЛО#АКО|#КЕЙ#ЙОД", "########|#ТЯЛО#ХИ|#КРИТ#ОБ|#АЕЦ#ТРИ|#Е#ЕК#ОС|##З#ОХ##|#ДА#НАТО|#УХ##НОВ|#МАНЕ#РЕ|#АРЕС#АС", "########|#ИБИС#УХ|#РЕКА#ХИ|#АТОЛ#ОТ|#КАНА###|###АМПЕР|#МУ##АРА|#Е#ЧАН##|#СПИ#ДОН|#ООН#АМА", "########|#СПИ#ЧИН|#НА#СЕЛО|#АРА#РИС|#ХИ#ДЕ##|#АС#АНОД|###ИМ#ТО|#КОВАЧ##|#ОКА#ЕТО|#ДОН#КЕЙ", "########|#ТАЙФУН#|#АХ#АМИН|#НИЛ##ГО|#КЛИО#ЕТ|###РО#РА|#ОМАН###|#РЕ##ЕРА|#ЕСЕ#КАЛ|#ЛОС#ОКО", "########|#МИТО#СИ|#АДАМ#ОМ|#РЕ#ЕГН#|#ТЯ#Г#АС|###ДАНТЕ|#РОВ#ОАЕ|#ЕРА####|#ПИ#МОТО|#АЗ#ИБИС", "########|#ГО#В#ВИ|#АВЕЛ#ИМ|#РЕКА#ТЕ|#АС#К###|###Л#БНТ|#ОКО#ЛЕЯ|#МАЙКА##|#АР#ЕТЮД|#НА#ЙОГА", "########|#РЪЖ#МОЛ|#АГА#ИВА|#ЗЪБ#ТИ#|#КЛАС#ДО|#А##ТРИО|#ЗА#РЕЙН|##ДВЕ###|#ТА#ЛЕНА|#ОМ#АРЕС", "########|#ДЯЛ#КУМ|#ОГЪН#ХИ|#ЛОВИ###|#АД#ЛЕНА|#РАК#ТОР|###ОДА##|#ЛЕЛЯ#АС|#ЕС#ДАЛИ|#НЕ#ОЗОН", "########|#ХИТ#ОРЕ|#АКО#ЗАР|#РАК#ОКА|#ТРИ#НЕ#|#И#О##ТО|#ЯК#ВРАТ|##ОСЛО##|#ЕС#АТОЛ|#ТА#КАСА", "########|#КОНДОР#|#ЛАЕ#ГАЗ|#АЗ#РЪКА|#САПУН##|###ЕС#ЛА|#МОРЕ#ОТ|#ОКО##ВИ|#РО#ЕЛЕН|#ЖП#ТИЧА", "########|#ЛУНА#ГО|#ЕЛЕН#АС|#ВИ#КОЗА|##КРАК##|#ЗА#РАМО|#Е#ТА#ИМ|#ЛЕЕ####|#ЕК#ПАПА|#НО#ОРИЗ", "########|#ЙЕНА#МУ|#ОРИЗ#ИМ|#ТА##Ж##|#А#КРЕДА|###СОНАР|#КНИГА##|#ЛИ###ТЕ|#ОВЕН#ОХ|#НАТО#ПО", "########|#ОХ#Р#УХ|#ЗЕЛЕ#ХИ|#ОРЕ##ОТ|#НАТО###|###ИСКРА|#ЛА#ЛАОС|#АР#ОЙ##|#ЛЕН#РОД|#ЕСЕ#ОСА", "########|#ЧУК#ЕКО|#ЕРА#СИВ|#РОЛЯ#ТЕ|#ЕК##КОН|#Н#СОЛ##|##САХАРА|#МОЛ#СИН|#ИВАН#ГО|#ГАМА#АД", "########|#ОЗОН#АС|#РОК#ТРИ|#ИРАН#Г#|#ЗА#ОКОП|####КИНО|#ЛАКЪТ##|#АХАТ#МЮ|#ЛИН#ВОЛ|#ЕЛА#ИЛИ", "########|#ШАХ#ЛИН|#ЕКО#ОКО|#СОМ#ПАТ|#Т#Е#АРА|##БРАТ##|#СИ#ЛАМА|#ЕС#О#ЕР|#ЛЕН#ЕСЕ|#ОРЕ#КОС", "########|#СЕЕ#ОКА|#ОМ##РИМ|#ВИЕ#ЕТА|#АРДА###|###Е#ПОД|#СОМ#СТО|#ОС#ЛИ##|#ЛЕТИ#РЕ|#ОМАН#ОЙ", "########|#КЛОН#ТО|#ОАЗА#ЯК|#В#О#АЛО|#ЕГН#ТОП|##О#ПО##|#АР#АЛФА|#ХИМН#ОТ|#ИЛИ#ЕТО|#ЛАЕ#СОМ", "########|#АНКАРА#|#ЛОВ#ОРЕ|#ОСА##АР|###РАК##|#ЛИЦЕ#ЯД|#ОБ#ЦСКА|#АС##И##|#РЕПА#ФА|#АНОД#ИЗ", "########|#БИРА#ПИ|#АДАМ#ИЗ|#НЕ#АХАТ|##ЯК##НО|#М##УРОК|#ИМ#ХИ##|#НОВ#ЕСЕ|#СТОЛ#ОМ|#КОЛА#МУ", "########|#ОСЛО#ФА|#ПОЕТ#ЕР|#АЛТ#ОСА|#Л#ИВА##|###Щ#ЕСЕ|#КИЕВ#ОС|#ОБ#ИСК#|#ЛИ#НЕОН|#АС#ТЕЛЕ", "########|#ГРЯХ#СИ|#ЛАМА#ОБ|#АДАМ#ВИ|#ДО#С#АС|##СТИХ##|#СТАЯ#ТО|#####БОР|#ИНД#ОРЕ|#МИЕ#БАЛ", "########|#ДЕН#ЛЕН|#ВЛАК#ЛИ|#ОБ#ЛЕЕ#|#РА#А#НО|###ЕС#АС|#МВР####|#ЛА#ВЯРА|#АЗ#АДАМ|#ДА#РЕКА", "########|#МОСТ#ЖП|#ОС#ОВЕС|#РЪЖ#ИЛИ|#ЕМИР#Я#|###ТЕМЗА|#ЗЛО#ЛОС|#НА#ТЯ##|#АЛО#КАЛ|#КЕЙ#ОДА", "########|#ЕК#Г#ГО|#ГАМА#ЕР|#ИРАН#РЕ|#ПЕТА#Д#|#ЕТ##КАЛ|#ТАУ#ЮНИ|###РИФ##|#АЛО#ТОР|#РАК#ЕТА", "########|#ЗАЕМ#УМ|#ОХ#АУРА|#ЛИСТ#ОС|#АЛТ#ОКА|###АЛО##|#МИР#НИЛ|#АР###РО|#ЛАЛЕ#АЗ|#ИКАР#НА", "########|#КОРОНА#|#РА#ДЕТЕ|#АЗ#А#ИЗ|#КАЛ##НИ|###ОБЛАК|#ДАМА###|#ЕР#СОЛО|#ЛЕЕ#РОК|#ИСК#ЕВА", "########|#КИТО#ХИ|#АГА#ГАЗ|#МУ#ЛОЙ#|#ИМЕ#ЯВА|#ЛЕК##ЕК|#АНОД#РО|####ИМ##|#РЕ#СОЛО|#АР#КЛАС", "########|#ОБ#М#ФИ|#РИМА#ОМ|#ИРАК#НЕ|#ЗАР#Т##|###ТРОЯН|#ТО#АРДА|#АС#Й###|#НЛО#АМА|#КОС#ЗИД", "########|#ОМАН#ПО|#РЕКА#РО|#ЕКО#КОН|#ЛИ#ВОЛ#|##Ц#АРЕС|#ЗА#ЛЕТИ|#О###Я##|#ЛАЛЕ#ТЯ|#АХАТ#АД", "########|#НОС#ЦЕХ|#АФИШ#ЛИ|#ТИ#ИМЕ#|#ОС#Л#НО|###ЩЕ#АХ|#ОБИР###|#МИТ#ТИФ|#АР#НИВА|#НА#ИКАР", "########|#ВОЛТ#МИ|#ИКАР#ОМ|#ТЕ#И#М#|##АД#СЪД|#БНР#ЕКО|#А#ОРЕ##|#НЕБЕ#ИЗ|#АХ#КОВЕ|#НО#АХАТ", "########|#АДАМ#ЖП|#РЕКА#ЕС|#Е#ОЙ#ЛИ|#СИ##ТЯ#|###ОБ#ЗА|#НАТО#ОХ|#ЕТ#РЕ##|#ООН#КОД|#НЛО#ОСА", "########|#ВУЛКАН#|#РЕ#ОРЕЛ|#АФИШ#ПО|#ТА##БАС|###Б#АЛТ|#ОКЕАН##|#БАЙТ#ТЕ|#ЕР#ОВЕС|#ДА#ЛИЦЕ", "########|#ТАНЦ#ПО|#ЕРОС#ЕС|####КАРА|#МАСА#Н#|#АЛТ#РИФ|#ТОР#ОКА|###ЕТ###|#НИЛ#ЯДЕ|#АМА#ДАР", "########|#АГА#НИЛ|#ТОГО#МИ|#ОРЕ#ЛЕН|#МАНЕ###|###ТРИОН|#СИ##ЗЛО|#ЕРА#ПО#|#ЛАК#ИВА|#ОКО#ТОР", "########|#НЕБЕ#ДО|#ИКАР#АХ|#ЛОС##Р#|####КОВЕ|#ОТ#ИБИС|#ДЕ#В#НЕ|#ИНДИЯ##|#НОВ#МИТ|##РЕ#АМА", "########|#КАСА#ДО|#ЛУК#ООН|#ОРИЗ#ЛИ|#НА#ИРАК|####МАРС|#КОЛАН##|#ОБ##АКО|#ВИНО#АД|#ЕРОС#ЛА", "########|#ЧЕСТ#РО|#АЛЕЯ#ОБ|#НИЛ#ПСИ|##НОС#АР|#З##ТА##|#ИЗ#ОСЛО|#ДО#Л#ИМ|#АЛО#АРА|#РАЙ#ХАН", "########|#ФОТО#ТА|#ОРИЗ#ЯД|#НЕ#ОБ##|###ОНИКС|#ЛУК#ТОК|#А#ОМ#НИ|#МЮ#ИМ##|#ПАН#АГА|#АРА#ТОР", "########|#ТИНЯ#АС|#ОРЕ#ПЕЕ|#РА#ЛИЦЕ|#АНГЕЛ##|####БАБА|#РО#Е#ОТ|#ОБЕД#ТИ|#НИЛ#ДЕН|#АРА#ЕВА", "########|#ТАЛК#ОС|#ЕТА#ЯРЕ|#МОЛ#ПЕЕ|#АЛЕКО##|####АНОД|#ЕР#ЛИМА|#РИМ#Я##|#ОБИР#МУ|#САГА#ИМ", "########|#ДИМ#ВИЕ|#ЯЗОВИР#|#ВИНА#АР|#ОДЕР#НО|#ЛА#НИ##|###САМБА|#ДО###ЕР|#ЯРЕМ#ТЕ|#ЛЕТИ#АС", "########|#СПАРТА#|#ТЕКЕ#ЛА|#ЕТО#ДИМ|#НЕ#ГОБИ|#АЛТ#ЛИН|###ИВА##|#ЛИ#ИРАН|#ЕЛЕН#ГО|#КИТО#АС", "########|#ПАРИ#ТО|#ЕЛЕК#ОС|#НО#АУРА|#Ч#АР###|#ОРЕ#ТОН|###ЦВЕТЕ|#ПО#ИМ##|#ОКА#ЗЕТ|#ПОД#АРА", "########|#МВР#ДДС|#АРА#ЕР#|#СЪД##АР|#АХАТ#МИ|###РА#АС|#ФА#НИ##|#АХ#К#ГО|#ЗИД#ТОК|#АЛО#ЕЛА", "########|#МАДРИД#|#АМА#ГОЛ|#ЛИ#ДУМА|#ИНД#М##|###ЕЛЕНА|#ПИ#АНОД|#УРОК###|#МАК#СЕЕ|#АКО#ИСК", "########|#ТЕЦ#ТА#|#ЕМУ#ЕКО|#ТИНЯ#УМ|#АРА#ЕЛА|###М#ПАН|#ТРИ#О##|#РЕ#ЕСЕН|#ИКАР#ТО|#ОАЗА#ОС", "########|#ИГЛА#МИ|#РА#Л#УМ|#АРГОН##|#КАЛ#ОКО|###ИЗВОР|#ЛЕНА#НЕ|#АМА#Р##|#ВИ#ЛАЛЕ|#АР#ИКАР", "########|#ЮЛИ#ЕКГ|#ЗОВ#ТАУ|#ДВА##ИМ|#А#НО#НА|####ДО##|#ЦСКА#ИЗ|#ЕТО#ЕКО|#НОС#ВАЛ|#АЛТ#АРА", "########|#ЕЛА#ВОЛ|#КЪТ##СИ|#ОКОП#Т#|###ЛОАРА|#АР#ДВОР|#ТО##ЕВА|#ИМЕЙЛ##|#НАТО#МИ|#АНОД#УМ", "########|#ОСЕМ#ДЕ|#ЦЕЛ#СОЛ|#ЕЛЕК#ХИ|#ТОН#БАН|###АЛО##|#ТЯ#ЕЗОП|#ЕР#КАПА|#ЛЕНА#АР|#ЕМИР#ЛИ", "########|#ВОЙНИК#|#РА#ЕВРО|#АЗ##АЕЦ|#ГАНГ#ДЕ|###О#МАТ|#КАЙРО##|#УХ#ЕНОТ|#ЛИН#АКО|#АЛО#ХОР"], "l": ["#########|#НИЛ#К#ПО|#ЕЗЕРО#ИМ|#ПИКАСО##|#АД#ДА#ОЙ|#ЛА#О#ОРЕ|###ЕС#СИН|#САЙТ##ЗА|#ОХ##ТЕ##|#ВИЕ#ИРАН|#АЛТ#КАРА", "#########|#ТЕСТО#ТЯ|#ИЗТОК#ЮГ|##ЕР#ОСЛО|#АРЕС#ЛЕД|#СОЛ#ЗОНА|###АМИН##|#ЗА#АД#ЕЙ|#ОТ#К##РО|#РОД#ЕНОТ|#АЛО#КАСА", "#########|#ПАН#КОЛА|#АГА#СТОЛ|#РЕ#ХИ#ПО|#ИНД##ЗА#|#СТИХ#ЕТА|###МИ#БАС|#ГО#ТОР##|#РАК#РАНА|#АЗ#ЕК#ИМ|#ДА#ТА#ЛА", "#########|#ТА#ПАЗАР|#ЕГН#ГОРА|#НЕ#ПАН##|#ИНД##АМА|#СТОЛ##ИМ|###ХИТ#ТИ|#АРА#ОЗОН|#ДЕ#ЕКО##|#АКО#ИРАН|#МАЙ#ОАЗА", "#########|#ИТАКА#АД|#РЕКА#ОРЕ|#АТОМ####|#НА#ИСКРА|####ЛИЛАВ|#ЕК#А#ИМЕ|#РОВ##МОЛ|#АРИЯ#А##|#ТА#МОТОР|#ОБ#АХ#ТЕ", "#########|#ОРФЕЙ#ТА|#НА#ТОПАЗ|#ИЗ##Д#С#|#КУБА#ПОД|#СМЯХ#ОСА|###ЛАЛЕ##|#ИМ#ТИТЛА|#КОН###ОТ|#АТИНА#ТО|#РО#ОС#ОМ", "#########|#ИМЕЙЛ#ВИ|#СОЛО#РИМ|#КНИГА#Т#|#РАНА#ДОМ|#АХ##ЧАША|###ПЛАКАТ|#ОГРАДА##|#АРА##РИС|#ЗАХАР#НЕ|#АД#ЗА#ДЕ", "#########|#СОФИЯ#ЛИ|#ВРАТ#МАК|#ИГРА#ИВА|#ЛА#К#ДАР|#АНКАРА##|###И#Е#НЕ|#ИЗТОК#ОЙ|#ДЕ#ЗАР##|#ЕВРО#ЕТО|#ЯСЕН#ЧАС", "#########|#ЧУК#МАСА|#ИРАК#КОЛ|#ЛОВ#СОЛО|#ИКАР#Р##|###ЛОНДОН|#ТА#ЛИ#СИ|#ЕК#ЯВА##|#МУ##АТОЛ|#ПЛАН#ОКО|#ОАЗА#МАЙ", "#########|#ТВЕН#ДОМ|#РОСА#ОБ#|#ОЙ##М#ЕР|#ЯНТРА#ДЕ|#НАРОД###|###У#РОТА|#МЕД#ИКАР|#ОМ##ДЕН#|#МИТО#АГА|#АРЕС#НОС", "#########|#ЧАС#СЕЕ#|#ОКА#УТРО|#РОГ#П#АР|#БРАДА#ТЕ|#АД#Р#МОЛ|###ЗАР###|#ГРАМ#КАЛ|#РИЛА#АРА|#ИМЕ#ОСЕМ|#ГАЗ#МАСА", "#########|#КУКА#ОДА|#РЕ#М#КОС|#АФРИКА##|#КАИН##ЯД|###С#ЛИМА|#ТЕ#ДЕКАР|#АР#ЕВА##|#ВАЛ##РОД|#АТИНА#АД|#НО#ИЗ#ЕС", "#########|#УМ#ФОБИЯ|#ЕЛБА#ИСК|#ФАР#ДЕТЕ|#АДАМ##И#|###ТИРАНА|#ОБ#ДЕКАР|#КОЛА#О##|#ЕРА#ДРОБ|#АС#ВИДРА|#НА#ИМ#ЕС", "#########|#КРАК#ПОП|#НОВ#УЕФА|#ИДЕЯ#ТИР|#ГОЛ#К#СИ|#АС#ПОД##|###ГОРИЛА|#ЕКО#ЕМИР|#ЛА#ОМ###|#ЕРОС#ТОН|#КАСА#ЕТО", "#########|#ЖП#КОЛАН|#ЕЛБА#ОРЕ|#ЛА#НОС##|#ЯК#АХ#ДА|#ЗАР#Л#ЕР|#ОТ#МЮ#ТЕ|###РОВ#ЕС|#АВЕЛ####|#МАК#ГОРА|#АРА#ОБЕД", "#########|#ЛОТО#ЗЛО|#ОРИЗ#АЕЦ|#ДЕ#ОБ#ЩЕ|#К##Н#МАТ|#АКО#ФИ##|##АРДА#ДО|#ЯРЕ##КОС|#СЕЛО#ОМ#|#ЕТ#ДОЛАР|#НА#АХ#ТЕ", "#########|#КЛОН#ВИТ|#ООН#СЕЛО|#СТИХ#ЧИН|#ТОК#ДЕ##|###С#ОРЕЛ|#МИ#ОБ#СИ|#ОТ#МЪХ##|#ЛА##РИБА|#ИКАР#МАК|#ВАЗА#НЛО", "#########|#ЯХТА#ЕКГ|#ПОЯС#ВАР|#ОМ###АРА|#НЕПАЛ#АД|#ИРАН####|#Я#НОВИНА|##П#ДАКАР|#ЧАС#ТО##|#АРИЯ#НИЛ|#ТАНК#АМА", "#########|#ЯРОСТ#ЛА|#ЗАМЪК#АХ|#ОЙ#РА#ВИ|#В##НЕПАЛ|#ИГЛА#Л##|#РО##АУРА|###БУРГАС|#СТИХ##Д#|#ТИР#АНОД|#ОКА#ЗОНА", "#########|#КЛИО#ИНД|#РОМАН#ЛА|#ИЗ#Е#ХОР|#ТАУ#МИ##|###С#ЛЕНА|#ПАТ#АНОД|#ЕЛА#ДА##|#ТЕ####ЛИ|#ЕКРАН#ЕС|#ЛОАРА#ЕК", "#########|#МОТО#ЕСЕ|#ОПАЛ#ЛАК|#РЕ#ОРЕЛ#|#ЕР#В#КАЛ|##АКО##МИ|#С#Л#ДЕ##|#КСИ#ОВЕН|#АТОЛ#АЛО|#ЛА#ЕС#ЕТ|#АР#ВИ#НА", "#########|#РЕПА#ЗЛО|#ОГЪН#АЕЦ|#ВИНО##НЕ|##П#ДОМАТ|#РЕЧ#ДА##|#ОТ##ИРАК|#Д#БАНСКО|#ОДА###УМ|#ПИЛОТ#ЛА|#ИМ#МИ#АР", "#########|#ЗА#ЖАЛБА|#ЕРА#КАИН|#ЛЕВ#О#РО|#ЕСЕН#ЧАД|###ЛАЕ###|#ЛИ##КЛОН|#ЕЗОП#АЛО|#КИТ#ЕКО#|#АД#ЕС#ВИ|#РА#ТЕ#ОМ", "#########|#РЕПА#РОЙ|#ОНИКС#ДО|#ТО#У#ЛИН|#АТОЛ#ОС#|###ФА#ПЕЕ|#СКИ#САЙТ|#ЛОС#ОТ##|#АР##НАТО|#ВЕЖДА#ЕК|#АМПЕР#НО", "#########|#МАК#ЕДЕМ|#ЕЛА#САГА|#ДЕЛО#МИГ|##К##КАПА|#ЛОМ#Н#ЕР|#И#ИЛИ#ТЕ|#ВЕРИГА##|#АС##АТОЛ|#ДЕГА#ОКО|#АНОД#МАЙ", "#########|#ИНД#ПСИ#|#ЛОВ#ОАЗА|#ИВАН#ЩИТ|####Е##ДО|#ПОП#КРАЛ|#ИВА#РО##|#КИТ#АГНЕ|#АД#ОТ#ОМ|#СИ#РЕ#ТИ|#ОЙ#ЕР#АР", "#########|#ЗЕМЯ#ЯРЕ|#ОПУС#МОЛ|#НО#ПРАГА|#АС#И####|###ОСТРОВ|#ШЕФ#РОСА|#ПСИ#ИКАР|#И#СИ####|#ОХ#НАРОД|#НИ#ДРАМА", "#########|#АВЕЛ#ОРЕ|#ЛЕТИ#БАС|#ЕК#М#Л##|#К#МАГАРЕ|#ОСА#ОКОП|###СОЛ#ТО|#ПРАХ#ЧАС|#ЛИ##РЕ##|#АМА#АТОЛ|#ЧАД#КАСА", "#########|#ОКА#ТОР#|#ЛЕД#ЕСЕН|#ОБ#Р#АКО|#ВАГОН#АС|#ОПУС#С##|###МАГАРЕ|#ЯМА#АХАТ|#РО##ЗА##|#ЕНОТ#РОД|#МЕСО#АМА", "#########|#ОДЕР#ЦЕЛ|#СЕДЕМ#ВИ|#ЕЛЕК#ПАН|#МОМА#А##|#####ПУЛС|#ИСК#ЕНОТ|#ЗНАМЕ#ПО|#ВАЛ##ФА#|#ОХ#ЕРАТО|#РА#КОРАБ", "#########|#КЛИО#ЛИН|#ООН#КАСА|#РАДАР#Т#|#ЕР#РАДИО|#МАК#КАНА|###СИ#ЛАЕ|#СКИ#МИ##|#ТИ#ЛИ#АХ|#АЛО#ТОРА|#РОЙ#ОМАН", "#########|#ЗОВ#МОМА|#АКУЛА#ОС|#РАЙ#КАЛ#|###Ч##РИЕ|#КЛОН#МВР|#ЛИ#ИЛИ##|#ИВА##ЯДЕ|#МАРТ##ЯД|#АД#ЕТ#ДЕ|#ТА#НО#ОМ", "#########|#ПИ#ДАНТЕ|#ИЗВОР#УХ|#ЛИ##А#НО|#ОДИН#АД#|#ТАСОС#РО|###КСИ#АХ|#ЯК##ВИ##|#СОВА#ВИК|#ЕЗИК#АЛО|#НАТО#НИЛ", "#########|#РО#К#КАЛ|#АВЕЛ#ИЛИ|#МЕСО#ТОН|#ОС#НА###|###И#ЛАОС|#ПИР#ЕЗОП|#ЕТА#Я#НИ|#ТАНК#П##|#ЕК#ОЛОВО|#ЛА#СИ#ИМ", "#########|#СПОРТ#ИЗ|#АРМИЯ#ВИ|#ГО#Г#ЧАД|#АЛФА#А##|##ЕР#ОСЛО|#ЕТА#Б#ЕК|#Р#НО##НА|#АНКАРА##|#ТО#ЗИДАР|#ОС#АС#ЗА", "#########|#АНГЕЛ#РО|#КИРКА#ОБ|#У#АР#ЕСЕ|#ЛЕНА##АД|#АТИНА###|###Т#ТРОН|#ПО#ЛОАРА|#ОС#УМ#Г#|#ЕЛЕН#МАТ|#ТОРА#ЮНИ", "#########|#АМА#ДАЛИ|#КОРЕЯ#ОБ|#УМ##ЛЕТИ|#ЛЪЧ##КОС|#АКОРД###|###ВИ#ХАН|#АРЕС#ЕЛА|#ТОК##РЕ#|#ОС#ИТАКА|#ЛА#ЗА#ОХ", "#########|#ВЗВОД#ГО|#РО#ДЕВЕТ|#АЛФА#ЕР#|#ТАУ#ПЕДЯ|###РИЕ#АР|#ООН#Р#НЕ|#БЛАТО###|#ЕТ#А#МЕД|#ЦАР#МИТО|#АРА#ИРАН", "#########|#ХЕЛИЙ#ЛА|#АЛЕКО#АХ|#РАДОН#ЛИ|#Т##Н#ЦЕЛ|#ИГРА#С##|#ЯРЕ#ОКОП|##А##МАЛИ|#АНОД##ТЕ|#ЛИХВА#АС|#ОТ#ЕР#РА", "#########|#ЗЕВС#СТО|#ОДИН#МАЙ|#ЛИ#АЛО##|#АС#Х#ЛОС|##ОКА#ЯДЕ|#БНР#ЗНАЕ|#Л#ИВА###|#АЛЕЯ#ОРЕ|#ТО#РОБОТ|#ОМ#АХ#ДА", "#########|#СТИХ#ДУХ|#МАЛИ#ЯРЕ|#О#И#ДВОР|#ЛА###ОКА|#ЯРЕМ#Л##|#НАРОД#НЕ|###АЛО#ОТ|#ДА###ЕК#|#АМИН#СЪН|#РАМО#ЕТА", "#########|#ОДИН#РАЙ|#ГАРА#ОРЕ|#Р#А##ДЕН|#АГНЕ#ОСА|#ДО#РИС##|#АЛТ#В#ОБ|###ОКА#ЛА|#МИ#А#КОН|#АМИН#ЕВА|#ТЕМА#ЙОН", "#########|#ДЕГА#ДАР|#ОВЕН#ЕРА|#НАРОД###|###ОДИСЕЙ|#Г#Й#ВИНО|#ОХ#ТА#ОТ|#ТИ##НОТА|#ВЕЕ##С##|#АНГЕЛ#РО|#ЧАНТА#ЕЙ"]};
+const SIZES = { s: { W: 7, H: 9, name: 'Малка' }, m: { W: 8, H: 10, name: 'Средна' }, l: { W: 21, H: 25, name: 'Голяма' } };
+const MAX_HINTS = 3;
+const CLUE = '#';
+const dict = buildDict(DICT_TEXT);
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('krs_' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('krs_' + k, JSON.stringify(v)); } catch {} if (window.cloudSync && window.cloudSync.enabled && (k === 'game' || k.startsWith('played_'))) window.cloudSync.queue(); }
+};
+
+const $ = id => document.getElementById(id);
+let S = null;           // текуща игра
+let sel = null;         // {r,c,dir}
+let timerId = null;
+
+function hash(s) { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+function entriesFromGrid(g, pid) {
+  const H = g.length, W = g[0].length, out = [];
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    if (g[r][c] !== CLUE) continue;
+    let x = c + 1; while (x < W && g[r][x] !== CLUE) x++;
+    if (x - c - 1 >= 2) { let w = ''; for (let k = c + 1; k < x; k++) w += g[r][k]; out.push({ r, c, dir: 'R', word: w, cells: Array.from({ length: x - c - 1 }, (_, k) => [r, c + 1 + k]) }); }
+    let y = r + 1; while (y < H && g[y][c] !== CLUE) y++;
+    if (y - r - 1 >= 2) { let w = ''; for (let k = r + 1; k < y; k++) w += g[k][c]; out.push({ r, c, dir: 'D', word: w, cells: Array.from({ length: y - r - 1 }, (_, k) => [r + 1 + k, c]) }); }
+  }
+  for (const e of out) { const cl = dict.clues[e.word] || ['?']; e.clue = cl[hash(e.word + pid) % cl.length]; }
+  return out;
+}
+
+function fmt(sec) { sec = Math.floor(sec); const m = Math.floor(sec / 60), s = sec % 60; return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
+
+// Вестникарски формат 21×25: четири отделни секции от готовите проверени решетки.
+// Това е междинен вариант; секциите не са една обща преплетена мрежа.
+function newspaperGrid() {
+  const W = 21, H = 25;
+  const g = Array.from({length:H}, () => Array(W).fill('#'));
+  const pool = POOLS.l;
+  const used = store.get('newspaper_used', []);
+  const candidates = pool.map((v,i) => ({i, v, score:(v.match(/#[А-ЯЁ]{2}(?=#|\|)/g)||[]).length}));
+  const fresh = candidates.filter(x=>!used.includes(x.i));
+  const selected = [];
+  for(let t=0;t<4;t++) {
+    const available=(fresh.length>=4?fresh:candidates).filter(x=>!selected.includes(x.i));
+    // Предпочитаме решетки с по-малко двубуквени отговори.
+    available.sort((a,b)=>a.score-b.score || Math.random()-.5);
+    selected.push(available[Math.floor(Math.random()*Math.min(12,available.length))].i);
+  }
+  store.set('newspaper_used', [...used,...selected].slice(-36));
+  const offsets=[[1,1],[1,11],[13,1],[13,11]];
+  selected.forEach((i,t)=>{
+    const tile=pool[i].split('|');const [rr,cc]=offsets[t];
+    for(let r=0;r<tile.length;r++) for(let c=0;c<tile[r].length;c++) g[rr+r][cc+c]=tile[r][c];
+  });
+  return {pid:'news-'+Date.now(),grid:g};
+}
+
+// ---------- избор на кръстословица ----------
+function pickPuzzle(size) {
+  if (size === 'l') return newspaperGrid();
+  const pool = POOLS[size] || [];
+  const played = store.get('played_' + size, []);
+  const free = pool.map((_, i) => i).filter(i => !played.includes(i));
+  if (free.length) {
+    const i = free[Math.floor(Math.random() * free.length)];
+    played.push(i); store.set('played_' + size, played);
+    return { pid: size + '-' + i, grid: pool[i].split('|').map(r => r.split('')) };
+  }
+  // наборът е изчерпан – генерираме нова на живо
+  const { W, H } = SIZES[size];
+  const p = generatePuzzle(dict, W, H, { timeLimit: size === 'l' ? 9000 : 6000, maxSteps: 30000, maxSingles: W >= 9 ? 4 : 3, clueBias: 0.2 });
+  if (p) return { pid: 'g' + Date.now(), grid: p.grid };
+  store.set('played_' + size, []);
+  return pickPuzzle(size);
+}
+
+// Визуално прелистване: запазваме само изгледа на старата решетка,
+// без да променяме състоянието на играта или облачното записване.
+let pageTurnCleanup = null;
+function beginPageTurn() {
+  if (pageTurnCleanup) { pageTurnCleanup(); pageTurnCleanup = null; }
+  const board = $('board');
+  const wrap = $('boardWrap');
+  if (!S || !board.children.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  const sheet = board.cloneNode(true);
+  sheet.removeAttribute('id');
+  sheet.classList.remove('page-reveal');
+  sheet.classList.add('page-turn-sheet');
+  sheet.setAttribute('aria-hidden', 'true');
+  sheet.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  sheet.style.width = board.getBoundingClientRect().width + 'px';
+  sheet.style.height = board.getBoundingClientRect().height + 'px';
+  wrap.appendChild(sheet);
+  const cleanup = () => { sheet.remove(); if (pageTurnCleanup === cleanup) pageTurnCleanup = null; };
+  pageTurnCleanup = cleanup;
+  sheet.addEventListener('animationend', cleanup, { once: true });
+  setTimeout(cleanup, 850);
+  return true;
+}
+
+function newGame(size) {
+  const turningPage = beginPageTurn();
+  $('loading').classList.add('show');
+  setTimeout(() => {
+    const pz = pickPuzzle(size);
+    S = { size, pid: pz.pid, grid: pz.grid, fill: pz.grid.map(r => r.map(x => x === CLUE ? CLUE : '')), hinted: [],
+          hintsLeft: MAX_HINTS, elapsed: 0, done: false, paused: false };
+    sel = null;
+    $('loading').classList.remove('show');
+    setupGame();
+    if (turningPage) {
+      const board = $('board');
+      board.classList.remove('page-reveal');
+      void board.offsetWidth;
+      board.classList.add('page-reveal');
+      board.addEventListener('animationend', () => board.classList.remove('page-reveal'), { once: true });
+    }
+  }, 30);
+}
+
+function restartGame() {
+  if (!S) return;
+  S.fill = S.grid.map(r => r.map(x => x === CLUE ? CLUE : ''));
+  S.hinted = []; S.hintsLeft = MAX_HINTS; S.elapsed = 0; S.done = false; S.paused = false;
+  sel = null;
+  setupGame();
+}
+
+// ---------- изграждане ----------
+let ENT = [], byCell = {}, clueEnt = {};
+function setupGame() {
+  ENT = entriesFromGrid(S.grid, S.pid);
+  byCell = {}; clueEnt = {};
+  for (const e of ENT) {
+    for (const [r, c] of e.cells) (byCell[r + ',' + c] = byCell[r + ',' + c] || {})[e.dir] = e;
+    (clueEnt[e.r + ',' + e.c] = clueEnt[e.r + ',' + e.c] || {})[e.dir] = e;
+  }
+  document.querySelectorAll('#sizes button').forEach(b => b.classList.toggle('on', b.dataset.size === S.size));
+  $('app').classList.toggle('paused', !!S.paused);
+  $('msg').textContent = '';
+  buildBoard();
+  if (!sel) { const first = ENT.find(e => e.dir === 'R') || ENT[0]; sel = { r: first.cells[0][0], c: first.cells[0][1], dir: first.dir }; }
+  paint(); updateStats(); save(); startTimer();
+}
+
+function cellSize() {
+  const W = S.grid[0].length;
+  const avail = Math.min(document.querySelector('.wrap').clientWidth, 900) - 6;
+  return Math.max(15, Math.min(66, Math.floor((avail - (W - 1) - 5) / W)));
+}
+
+function buildBoard() {
+  const g = S.grid, H = g.length, W = g[0].length, b = $('board');
+  const cs = cellSize();
+  document.documentElement.style.setProperty('--cell', cs + 'px');
+  b.style.gridTemplateColumns = `repeat(${W}, ${cs}px)`;
+  b.innerHTML = '';
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    const d = document.createElement('div');
+    d.dataset.r = r; d.dataset.c = c;
+    if (g[r][c] === CLUE) {
+      const ce = clueEnt[r + ',' + c] || {};
+      const list = ['R', 'D'].filter(k => ce[k]);
+      d.className = 'cell c' + (list.length ? '' : ' empty');
+      list.forEach((k, i) => {
+        const p = document.createElement('div');
+        p.className = 'part'; p.dataset.dir = k; p.lang = 'bg'; p.title = ce[k].clue;
+        const sp = document.createElement('span'); sp.textContent = ce[k].clue; p.appendChild(sp);
+        d.appendChild(p);
+        const a = document.createElement('div');
+        a.className = 'arrow ' + k;
+        if (k === 'R') a.style.top = list.length === 2 ? '25%' : '50%';
+        d.appendChild(a);
+      });
+    } else {
+      d.className = 'cell l';
+    }
+    b.appendChild(d);
+  }
+  requestAnimationFrame(fitClues);
+}
+
+function fitClues() {
+  const cs = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell'));
+  document.querySelectorAll('.cell.c .part').forEach(p => {
+    const sp = p.firstChild;
+    let fs = Math.min(11, cs * 0.2);
+    p.style.fontSize = fs + 'px';
+    const room = () => p.clientHeight - 2;
+    while ((sp.offsetHeight > room() || sp.scrollWidth > p.clientWidth) && fs > 5) { fs -= 0.3; p.style.fontSize = fs + 'px'; }
+  });
+}
+
+function cellEl(r, c) { return $('board').children[r * S.grid[0].length + c]; }
+function curEntry() { if (!sel) return null; const m = byCell[sel.r + ',' + sel.c]; if (!m) return null; return m[sel.dir] || m.R || m.D; }
+
+function paint() {
+  const g = S.grid, H = g.length, W = g[0].length;
+  const e = curEntry();
+  if (e) sel.dir = e.dir;
+  const inWord = new Set(e ? e.cells.map(([r, c]) => r + ',' + c) : []);
+  const hinted = new Set(S.hinted);
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    const el = cellEl(r, c);
+    if (g[r][c] === CLUE) {
+      el.querySelectorAll('.part').forEach(p => p.classList.toggle('act', !!e && e.r === r && e.c === c && p.dataset.dir === e.dir));
+      continue;
+    }
+    el.textContent = S.fill[r][c];
+    el.classList.toggle('word', inWord.has(r + ',' + c));
+    el.classList.toggle('cur', !!sel && sel.r === r && sel.c === c);
+    el.classList.toggle('hinted', hinted.has(r + ',' + c));
+    el.classList.remove('bad');
+  }
+  if (e) {
+    $('clueArr').textContent = e.dir === 'R' ? '▸' : '▾';
+    $('clueText').textContent = e.clue;
+    $('clueLen').textContent = e.cells.length + ' букви';
+  }
+}
+
+function updateStats() {
+  $('time').textContent = fmt(S.elapsed);
+  const best = store.get('best_' + S.size, null);
+  $('best').textContent = best ? fmt(best.t) : '—';
+  $('solved').textContent = store.get('solved', 0);
+  $('dots').innerHTML = Array.from({ length: MAX_HINTS }, (_, i) => `<i class="${i < S.hintsLeft ? '' : 'off'}"></i>`).join('');
+  $('hintN').textContent = S.hintsLeft;
+  $('hintBtn').disabled = S.hintsLeft <= 0 || S.done;
+  $('pauseBtn').textContent = S.paused ? '▶ Продължи' : 'Ⅱ Пауза';
+}
+
+// ---------- часовник ----------
+let lastTick = 0;
+function startTimer() {
+  clearInterval(timerId);
+  lastTick = performance.now();
+  timerId = setInterval(() => {
+    const now = performance.now();
+    if (S && !S.done && !S.paused && !document.hidden) {
+      S.elapsed += (now - lastTick) / 1000;
+      $('time').textContent = fmt(S.elapsed);
+    }
+    lastTick = now;
+  }, 250);
+}
+setInterval(() => { if (S && !S.done) save(); }, 3000);
+document.addEventListener('visibilitychange', () => { lastTick = performance.now(); if (S) save(); });
+
+function save() { if (S) store.set('game', S); }
+
+// ---------- въвеждане ----------
+function select(r, c, dir) { sel = { r, c, dir }; paint(); }
+
+function onBoardClick(ev) {
+  if (!S || S.paused) return;
+  const t = ev.target.closest('.cell'); if (!t) return;
+  const r = +t.dataset.r, c = +t.dataset.c;
+  if (S.grid[r][c] === CLUE) {
+    const ce = clueEnt[r + ',' + c]; if (!ce) return;
+    const part = ev.target.closest('.part');
+    let dir = part ? part.dataset.dir : (ce.R ? 'R' : 'D');
+    const e = ce[dir];
+    const firstEmpty = e.cells.find(([y, x]) => !S.fill[y][x]) || e.cells[0];
+    select(firstEmpty[0], firstEmpty[1], dir);
+    return;
+  }
+  const m = byCell[r + ',' + c] || {};
+  let dir = sel ? sel.dir : 'R';
+  if (sel && sel.r === r && sel.c === c) dir = dir === 'R' ? 'D' : 'R';
+  if (!m[dir]) dir = dir === 'R' ? 'D' : 'R';
+  select(r, c, dir);
+}
+
+function isLocked(r, c) { return S.hinted.includes(r + ',' + c); }
+
+function advance(e, back) {
+  const i = e.cells.findIndex(([r, c]) => r === sel.r && c === sel.c);
+  if (back) { if (i > 0) { sel.r = e.cells[i - 1][0]; sel.c = e.cells[i - 1][1]; } return; }
+  for (let k = i + 1; k < e.cells.length; k++) {
+    const [r, c] = e.cells[k];
+    if (!S.fill[r][c] || k === i + 1 && !isLocked(r, c)) { sel.r = r; sel.c = c; return; }
+  }
+  if (i + 1 < e.cells.length) { sel.r = e.cells[i + 1][0]; sel.c = e.cells[i + 1][1]; }
+}
+
+function typeLetter(ch) {
+  if (!S || S.done || S.paused || !sel) return;
+  const e = curEntry();
+  if (!isLocked(sel.r, sel.c)) S.fill[sel.r][sel.c] = ch;
+  if (e) advance(e);
+  paint(); afterChange();
+}
+
+function backspace() {
+  if (!S || S.done || S.paused || !sel) return;
+  const e = curEntry();
+  if (S.fill[sel.r][sel.c] && !isLocked(sel.r, sel.c)) { S.fill[sel.r][sel.c] = ''; }
+  else if (e) { advance(e, true); if (!isLocked(sel.r, sel.c)) S.fill[sel.r][sel.c] = ''; }
+  paint(); save();
+}
+
+function move(dr, dc) {
+  if (!S || !sel) return;
+  const H = S.grid.length, W = S.grid[0].length;
+  let r = sel.r + dr, c = sel.c + dc;
+  while (r >= 0 && r < H && c >= 0 && c < W) {
+    if (S.grid[r][c] !== CLUE) { const m = byCell[r + ',' + c] || {}; let dir = dr ? 'D' : 'R'; if (!m[dir]) dir = dir === 'R' ? 'D' : 'R'; select(r, c, dir); return; }
+    r += dr; c += dc;
+  }
+}
+
+const LAT = { q: 'Я', w: 'В', e: 'Е', r: 'Р', t: 'Т', y: 'Ъ', u: 'У', i: 'И', o: 'О', p: 'П', a: 'А', s: 'С', d: 'Д', f: 'Ф', g: 'Г', h: 'Х', j: 'Й', k: 'К', l: 'Л', z: 'З', x: 'Ь', c: 'Ц', v: 'Ж', b: 'Б', n: 'Н', m: 'М' };
+const CODES = { BracketLeft: 'Ш', BracketRight: 'Щ', Backquote: 'Ч', Backslash: 'Ю' };
+const BG = 'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ';
+
+document.addEventListener('keydown', ev => {
+  if (!document.getElementById('authGate').hidden || ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  if (document.querySelector('.modal-bg.show')) { if (ev.key === 'Escape') closeModals(); return; }
+  const k = ev.key;
+  if (k === 'Backspace' || k === 'Delete') { ev.preventDefault(); backspace(); return; }
+  if (k === 'ArrowLeft') { ev.preventDefault(); move(0, -1); return; }
+  if (k === 'ArrowRight') { ev.preventDefault(); move(0, 1); return; }
+  if (k === 'ArrowUp') { ev.preventDefault(); move(-1, 0); return; }
+  if (k === 'ArrowDown') { ev.preventDefault(); move(1, 0); return; }
+  if (k === ' ' || k === 'Tab') { ev.preventDefault(); if (sel) { const m = byCell[sel.r + ',' + sel.c] || {}; const d = sel.dir === 'R' ? 'D' : 'R'; if (m[d]) select(sel.r, sel.c, d); } return; }
+  let ch = null;
+  if (k.length === 1) {
+    const up = k.toLocaleUpperCase('bg');
+    if (BG.includes(up)) ch = up;
+    else if (LAT[k.toLowerCase()]) ch = LAT[k.toLowerCase()];
+  }
+  if (!ch && CODES[ev.code]) ch = CODES[ev.code];
+  if (ch) { ev.preventDefault(); typeLetter(ch); }
+});
+
+// ---------- проверка ----------
+function afterChange() {
+  save();
+  const g = S.grid; let full = true, wrong = 0;
+  for (let r = 0; r < g.length; r++) for (let c = 0; c < g[0].length; c++) {
+    if (g[r][c] === CLUE) continue;
+    if (!S.fill[r][c]) full = false; else if (S.fill[r][c] !== g[r][c]) wrong++;
+  }
+  if (!full) { $('msg').textContent = ''; return; }
+  if (wrong) { $('msg').textContent = `Решетката е пълна, но има ${wrong === 1 ? '1 грешна буква' : wrong + ' грешни букви'}.`; return; }
+  win();
+}
+
+function win() {
+  S.done = true;
+  const t = Math.floor(S.elapsed);
+  const used = MAX_HINTS - S.hintsLeft;
+  const prev = store.get('best_' + S.size, null);
+  const isRec = !prev || t < prev.t;
+  if (isRec) store.set('best_' + S.size, { t, hints: used });
+  store.set('solved', store.get('solved', 0) + 1);
+  save(); updateStats();
+  if (window.cloudSync?.enabled) window.cloudSync.complete(S);
+  $('winTime').textContent = fmt(t);
+  $('winRec').textContent = isRec ? (prev ? `Нов рекорд! Предишният беше ${fmt(prev.t)}.` : 'Първи рекорд за този размер!') : `Рекордът ви е ${fmt(prev.t)}.`;
+  $('winRec').className = isRec ? 'rec' : '';
+  $('winHints').textContent = used ? `Използвани подсказки: ${used} от ${MAX_HINTS}` : 'Без нито една подсказка 👏';
+  $('winModal').classList.add('show');
+}
+
+// ---------- подсказка ----------
+function hint() {
+  if (!S || S.done || S.paused || S.hintsLeft <= 0) return;
+  const g = S.grid;
+  const need = (r, c) => g[r][c] !== CLUE && S.fill[r][c] !== g[r][c];
+  let target = null;
+  if (sel && need(sel.r, sel.c)) target = [sel.r, sel.c];
+  if (!target) { const e = curEntry(); if (e) target = e.cells.find(([r, c]) => need(r, c)) || null; }
+  if (!target) {
+    const all = [];
+    for (let r = 0; r < g.length; r++) for (let c = 0; c < g[0].length; c++) if (need(r, c)) all.push([r, c]);
+    if (all.length) target = all[Math.floor(Math.random() * all.length)];
+  }
+  if (!target) return;
+  const [r, c] = target;
+  S.fill[r][c] = g[r][c];
+  S.hinted.push(r + ',' + c);
+  S.hintsLeft--;
+  const m = byCell[r + ',' + c] || {};
+  sel = { r, c, dir: m[sel && sel.dir] ? sel.dir : (m.R ? 'R' : 'D') };
+  paint(); updateStats(); afterChange();
+}
+
+// ---------- бутони ----------
+function closeModals() { document.querySelectorAll('.modal-bg').forEach(m => m.classList.remove('show')); }
+function confirmBox(title, text, yes) {
+  $('confTitle').textContent = title; $('confText').textContent = text;
+  $('confirmModal').classList.add('show');
+  $('confYes').onclick = () => { closeModals(); yes(); };
+}
+function inProgress() { return S && !S.done && S.fill.some((row, r) => row.some((x, c) => x && x !== CLUE && !S.hinted.includes(r + ',' + c))); }
+
+$('board').addEventListener('click', onBoardClick);
+$('hintBtn').onclick = hint;
+$('restartBtn').onclick = () => confirmBox('Рестарт?', 'Всички букви, часовникът и подсказките ще бъдат нулирани.', restartGame);
+$('newBtn').onclick = () => inProgress() ? confirmBox('Нова кръстословица?', 'Текущата игра ще бъде изоставена.', () => newGame(S.size)) : newGame(S ? S.size : 'm');
+$('pauseBtn').onclick = () => { if (!S || S.done) return; S.paused = !S.paused; $('app').classList.toggle('paused', S.paused); updateStats(); save(); };
+$('resumeBtn').onclick = () => $('pauseBtn').onclick();
+$('confNo').onclick = closeModals;
+$('winClose').onclick = closeModals;
+$('winNew').onclick = () => { closeModals(); newGame(S.size); };
+document.querySelectorAll('#sizes button').forEach(b => b.onclick = () => {
+  const sz = b.dataset.size; if (S && sz === S.size) return;
+  const go = () => { store.set('size', sz); newGame(sz); };
+  inProgress() ? confirmBox('Смяна на размера?', 'Текущата игра ще бъде изоставена.', go) : go();
+});
+
+// екранна клавиатура (фонетична подредба)
+(function buildKbd() {
+  const rows = ['ЯВЕРТЪУИОПШЩ', 'АСДФГХЙКЛЧЮ', 'ЗЬЦЖБНМ'];
+  const k = $('kbd');
+  rows.forEach((row, i) => {
+    const d = document.createElement('div'); d.className = 'row';
+    for (const ch of row) { const b = document.createElement('button'); b.textContent = ch; b.onclick = () => typeLetter(ch); d.appendChild(b); }
+    if (i === 2) { const b = document.createElement('button'); b.className = 'wide'; b.textContent = '⌫'; b.onclick = backspace; d.appendChild(b);
+                   const t = document.createElement('button'); t.className = 'wide'; t.textContent = '⇄'; t.title = 'Смени посоката';
+                   t.onclick = () => { if (sel) { const m = byCell[sel.r + ',' + sel.c] || {}; const dd = sel.dir === 'R' ? 'D' : 'R'; if (m[dd]) select(sel.r, sel.c, dd); } }; d.appendChild(t); }
+    k.appendChild(d);
+  });
+  const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  if (store.get('kbd', touch)) k.classList.add('show');
+  $('kbdBtn').onclick = () => { k.classList.toggle('show'); store.set('kbd', k.classList.contains('show')); };
+})();
+
+let rT;
+window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { if (S) { buildBoard(); paint(); } }, 150); });
+
+// Стартът се управлява от модула за удостоверяване по-долу.
+</script>
+<script src="/auth.js"></script>
+</body>
+</html>
