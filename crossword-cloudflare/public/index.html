@@ -111,6 +111,28 @@
   .loading { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(245,241,232,.85); z-index: 6; font-weight: 700; }
   .loading.show { display: flex; }
 
+
+  /* Разлистване при преминаване към нова кръстословица. */
+  .board-wrap { perspective: 1300px; isolation: isolate; }
+  .page-turn-sheet { position: absolute; top: 0; left: 50%; z-index: 8;
+    transform-origin: left center; pointer-events: none; will-change: transform, opacity;
+    box-shadow: 12px 8px 20px rgba(28,27,25,.18);
+    animation: crossword-page-turn .68s cubic-bezier(.35,.08,.25,1) forwards; }
+  .board.page-reveal { animation: crossword-page-reveal .55s ease-out both; }
+  @keyframes crossword-page-turn {
+    0% { transform: translateX(-50%) rotateY(0deg); opacity: 1; }
+    65% { opacity: .94; }
+    100% { transform: translateX(-50%) rotateY(-100deg); opacity: 0; }
+  }
+  @keyframes crossword-page-reveal {
+    from { opacity: .35; filter: brightness(.94); }
+    to { opacity: 1; filter: brightness(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .page-turn-sheet, .board.page-reveal { animation: none; }
+    .page-turn-sheet { display: none; }
+  }
+
   @media (max-width: 520px) {
     h1 { font-size: 27px; }
     .stats { gap: 5px; }
@@ -494,7 +516,32 @@ function pickPuzzle(size) {
   return pickPuzzle(size);
 }
 
+// Визуално прелистване: запазваме само изгледа на старата решетка,
+// без да променяме състоянието на играта или облачното записване.
+let pageTurnCleanup = null;
+function beginPageTurn() {
+  if (pageTurnCleanup) { pageTurnCleanup(); pageTurnCleanup = null; }
+  const board = $('board');
+  const wrap = $('boardWrap');
+  if (!S || !board.children.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  const sheet = board.cloneNode(true);
+  sheet.removeAttribute('id');
+  sheet.classList.remove('page-reveal');
+  sheet.classList.add('page-turn-sheet');
+  sheet.setAttribute('aria-hidden', 'true');
+  sheet.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  sheet.style.width = board.getBoundingClientRect().width + 'px';
+  sheet.style.height = board.getBoundingClientRect().height + 'px';
+  wrap.appendChild(sheet);
+  const cleanup = () => { sheet.remove(); if (pageTurnCleanup === cleanup) pageTurnCleanup = null; };
+  pageTurnCleanup = cleanup;
+  sheet.addEventListener('animationend', cleanup, { once: true });
+  setTimeout(cleanup, 850);
+  return true;
+}
+
 function newGame(size) {
+  const turningPage = beginPageTurn();
   $('loading').classList.add('show');
   setTimeout(() => {
     const pz = pickPuzzle(size);
@@ -503,6 +550,13 @@ function newGame(size) {
     sel = null;
     $('loading').classList.remove('show');
     setupGame();
+    if (turningPage) {
+      const board = $('board');
+      board.classList.remove('page-reveal');
+      void board.offsetWidth;
+      board.classList.add('page-reveal');
+      board.addEventListener('animationend', () => board.classList.remove('page-reveal'), { once: true });
+    }
   }, 30);
 }
 
