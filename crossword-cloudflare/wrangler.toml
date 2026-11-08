@@ -5,6 +5,7 @@ compatibility_date = "2026-11-07"
 directory = "./public"
 binding = "ASSETS"
 [[d1_databases]]
+[[d1_databases]]
 binding = "DB"
-database_name = "krastoslovici-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_name = "krastoslovici-bg"
+database_id = "d7ce58e6-66bb-4d8c-80c1-210ccee94390"
