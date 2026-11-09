@@ -25,6 +25,36 @@
   body { font-family: 'PT Sans', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
   .wrap { max-width: 900px; margin: 0 auto; padding: 14px 12px 40px; }
   .wrap.big { max-width: 1240px; }
+  /* страница с реклами отстрани */
+  .page { display: flex; justify-content: center; align-items: flex-start; gap: 18px; padding: 0 10px; }
+  .page > .wrap { flex: 1 1 auto; min-width: 0; margin: 0; }
+  .ads { flex: 0 0 190px; position: sticky; top: 14px; display: flex; flex-direction: column; gap: 12px; padding-top: 14px; }
+  .ad { display: block; text-decoration: none; color: var(--ink); background: #fffdf8; border: 1.5px solid var(--ink);
+    border-radius: 8px; padding: 12px 12px 10px; border-top: 6px solid var(--ad, #1c1b19); transition: transform .12s; }
+  .ad:hover { transform: translateY(-2px); }
+  .ad .tag { font: 700 10px 'PT Sans Narrow', sans-serif; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); }
+  .ad .brand { font: 700 21px 'PT Serif', Georgia, serif; margin: 4px 0 6px; line-height: 1.05; }
+  .ad .txt { font-size: 14px; line-height: 1.35; }
+  .ad .cta { display: inline-block; margin-top: 9px; font-weight: 700; font-size: 13px; color: var(--ad, #1c1b19); }
+  @media (max-width: 1280px) {
+    .page { flex-direction: column; align-items: stretch; }
+    .page > .wrap { width: 100%; margin: 0 auto; }
+    .ads { position: static; flex: none; flex-direction: row; flex-wrap: wrap; justify-content: center; max-width: 900px; margin: 0 auto; padding: 0 12px 12px; }
+    .ads .ad { flex: 1 1 240px; max-width: 300px; }
+    .ads.left { order: 2; } .page > .wrap { order: 1; } .ads.right { order: 3; padding-bottom: 30px; }
+  }
+  /* режим „цял екран“ */
+  body:not(.focus) .fs-only { display: none !important; }
+  body.focus .fs-only { display: inline-flex; }
+  body.focus .ads, body.focus header, body.focus .stats, body.focus .help, body.focus .account-bar { display: none !important; }
+  body.focus .page { padding: 0; display: block; }
+  body.focus .wrap { max-width: none; padding: 6px 8px 8px; }
+  body.focus .cluebar { position: sticky; top: 0; z-index: 20; margin-bottom: 6px; }
+  body.focus .cluebar .fs-time { margin-left: 14px; font-variant-numeric: tabular-nums; color: var(--cur); white-space: nowrap; }
+  body.focus .board-wrap { overflow: auto; max-height: calc(100vh - var(--fs-chrome, 130px)); justify-content: safe center; align-items: flex-start; }
+  body.focus .controls { margin-top: 8px; }
+  body.focus .btn.zoom { display: inline-flex; }
+  .btn.exitfs { background: transparent; color: var(--paper); border-color: rgba(245,241,232,.5); padding: 4px 10px; font-size: 14px; margin-left: 10px; }
   .btn.zoom { display: none; min-width: 42px; justify-content: center; font-size: 18px; }
   .wrap.big .btn.zoom { display: inline-flex; }
   header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap;
@@ -52,7 +82,7 @@
   .cluebar .arr { font-size: 20px; color: var(--cur); width: 18px; text-align: center; }
   .cluebar .len { margin-left: auto; font-weight: 400; opacity: .7; font-size: 14px; white-space: nowrap; text-transform: none; }
 
-  .board-wrap { position: relative; display: flex; justify-content: center; overflow-x: auto; }
+  .board-wrap { position: relative; display: flex; justify-content: safe center; overflow-x: auto; }
   .board { display: grid; border: 2.5px solid var(--line); background: var(--line); gap: 1px; user-select: none; touch-action: manipulation; }
   .cell { width: var(--cell); height: var(--cell); background: #fff; position: relative; }
   .cell.l { cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -149,6 +179,8 @@
 </style>
 <style>.auth-gate{position:fixed;inset:0;background:#f5f1e8;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}.auth-gate[hidden],.account-bar[hidden]{display:none}.auth-panel{width:min(100%,390px);padding:28px;border:2px solid #1c1b19;border-radius:10px;background:#fffdf8;text-align:center;font-family:system-ui}.auth-panel input{display:block;width:100%;padding:12px;margin:10px 0;border:1px solid #888;border-radius:5px;font-size:16px}.auth-panel button,.account-bar button{padding:10px 16px;border-radius:5px;cursor:pointer}.auth-panel #authSubmit{width:100%;background:#1c1b19;color:white;border:0}.auth-panel #authSwitch{border:0;background:none;text-decoration:underline}.auth-panel #authError{color:#b8321f}.account-bar{max-width:900px;margin:8px auto;display:flex;gap:12px;align-items:center;justify-content:flex-end;padding:0 12px;font:14px system-ui}.account-bar #syncStatus{color:#6d675c}</style></head>
 <body><div id="authGate" class="auth-gate"><div class="auth-panel"><h2>Кръстословици</h2><p>Влезте в профила си, за да запазвате прогреса си на всички устройства.</p><form id="authForm"><input id="authEmail" type="email" placeholder="Имейл" autocomplete="email" required maxlength="254"><input id="authPassword" type="password" placeholder="Парола (поне 10 символа)" autocomplete="current-password" required minlength="10"><button id="authSubmit" type="submit">Вход</button></form><button id="authSwitch" type="button">Нямате профил? Регистрация</button><p id="authError" role="alert"></p></div></div><div id="accountBar" class="account-bar" hidden><span id="accountName"></span><button id="cloudSaveBtn" type="button">☁ Запази</button><button id="logoutBtn">Изход</button><span id="syncStatus" aria-live="polite"></span></div>
+<div class="page">
+<aside class="ads left" id="adsLeft" aria-label="Реклами"></aside>
 <div class="wrap" id="app">
   <header>
     <h1>Вестник „Трета Възраст“<small>Скандинавски кръстословици</small></h1>
@@ -166,7 +198,7 @@
     <div class="stat"><div class="lbl">Решени</div><div class="val" id="solved">0</div></div>
   </div>
 
-  <div class="cluebar" id="cluebar"><span class="arr" id="clueArr"></span><span id="clueText">Изберете квадратче</span><span class="len" id="clueLen"></span></div>
+  <div class="cluebar" id="cluebar"><span class="arr" id="clueArr"></span><span id="clueText">Изберете квадратче</span><span class="len" id="clueLen"></span><span class="fs-only fs-time" id="fsTime"></span><button class="btn exitfs fs-only" id="exitFsBtn" title="Изход (Esc)">✕ Изход</button></div>
 
   <div class="board-wrap" id="boardWrap">
     <div class="board" id="board"></div>
@@ -180,6 +212,7 @@
     <button class="btn" id="restartBtn">↺ Рестарт</button>
     <button class="btn primary" id="newBtn">Нова кръстословица</button>
     <button class="btn zoom" id="zoomOut" title="По-малко">−</button><button class="btn zoom" id="zoomIn" title="По-голямо">+</button>
+    <button class="btn" id="fsBtn" title="Цял екран за решаване">⛶ Цял екран</button>
     <button class="btn" id="kbdBtn" title="Екранна клавиатура">⌨</button>
   </div>
   <div class="msg" id="msg"></div>
@@ -191,6 +224,8 @@
     Цъкнете в квадратче и пишете. Второ цъкване сменя посоката. Можете да пишете и с латинска клавиатура (фонетично: q→Я, w→В, y→Ъ, [→Ш, ]→Щ, `→Ч, \→Ю, x→Ь).
     Имате <b>3 подсказки</b> за една игра, всяка открива една буква. <b>Рестарт</b> изчиства решетката, часовника и подсказките.
   </div>
+</div>
+<aside class="ads right" id="adsRight" aria-label="Реклами"></aside>
 </div>
 
 <div class="modal-bg" id="winModal">
@@ -569,6 +604,16 @@ function cellSize() {
   const W = S.grid[0].length, H = S.grid.length;
   const wrap = document.querySelector('.wrap');
   wrap.classList.toggle('big', W > 12);
+  if (document.body.classList.contains('focus')) {
+    // цял екран: решетката заема целия прозорец; −/+ увеличават още (тогава се скролва)
+    const chrome = $('cluebar').offsetHeight + document.querySelector('.controls').offsetHeight + ($('kbd').classList.contains('show') ? $('kbd').offsetHeight + 14 : 0) + 34;
+    document.documentElement.style.setProperty('--fs-chrome', chrome + 'px');
+    const fW = Math.floor((window.innerWidth - 20 - (W - 1) - 5) / W);
+    const fH = Math.floor((window.innerHeight - chrome - (H - 1) - 5) / H);
+    // четимо по подразбиране (~60px); ако екранът позволява, цялата решетка без скрол
+    const fit = Math.max(Math.min(fW, 60), Math.min(fW, fH, 110));
+    return Math.max(26, Math.min(130, Math.max(34, fit) + 6 * store.get('fsZoom', 0)));
+  }
   const avail = wrap.clientWidth - 6;
   const byW = Math.floor((avail - (W - 1) - 5) / W);
   if (W <= 12) return Math.max(15, Math.min(66, byW));
@@ -581,10 +626,27 @@ function cellSize() {
   return Math.max(24, Math.min(byW, 72, fit + 4 * z));
 }
 function zoomBig(d) {
-  if (!S || S.grid[0].length <= 12) return;
-  store.set('bigZoom', Math.max(-2, Math.min(8, store.get('bigZoom', 0) + d)));
+  if (!S) return;
+  if (document.body.classList.contains('focus')) store.set('fsZoom', Math.max(-3, Math.min(10, store.get('fsZoom', 0) + d)));
+  else { if (S.grid[0].length <= 12) return; store.set('bigZoom', Math.max(-2, Math.min(8, store.get('bigZoom', 0) + d))); }
   buildBoard(); paint();
 }
+// ---------- цял екран ----------
+function setFocus(on) {
+  document.body.classList.toggle('focus', on);
+  $('fsBtn').textContent = on ? '✕ Изход от цял екран' : '⛶ Цял екран';
+  try {
+    if (on && !document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  } catch (e) {}
+  if (S) { buildBoard(); paint(); }
+  window.scrollTo(0, 0);
+}
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && document.body.classList.contains('focus')) setFocus(false);
+  else if (S) setTimeout(() => { buildBoard(); paint(); }, 60);
+});
+setInterval(() => { const t = $('fsTime'); if (t && document.body.classList.contains('focus')) t.textContent = '⏱ ' + $('time').textContent; }, 500);
 
 function buildBoard() {
   const g = S.grid, H = g.length, W = g[0].length, b = $('board');
@@ -649,6 +711,7 @@ function paint() {
     el.classList.toggle('hinted', hinted.has(r + ',' + c));
     el.classList.remove('bad');
   }
+  if (sel && document.body.classList.contains('focus')) { const ce = cellEl(sel.r, sel.c); if (ce && ce.scrollIntoView) ce.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
   if (e) {
     $('clueArr').textContent = e.dir === 'R' ? '▸' : '▾';
     $('clueText').textContent = e.clue;
@@ -838,6 +901,41 @@ $('board').addEventListener('click', onBoardClick);
 $('hintBtn').onclick = hint;
 $('zoomOut').onclick = () => zoomBig(-1);
 $('zoomIn').onclick = () => zoomBig(1);
+$('fsBtn').onclick = () => setFocus(!document.body.classList.contains('focus'));
+$('exitFsBtn').onclick = () => setFocus(false);
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && document.body.classList.contains('focus') && !document.querySelector('.modal-bg.show')) setFocus(false); });
+
+// ---------- реклами (примерни) ----------
+// Сменете текстовете и адресите тук. Цветът е само декоративна ивица.
+const ADS = {
+  left: [
+    { brand: '24 Часа', text: 'Новините от България и света – всеки ден.', url: 'https://www.24chasa.bg', cta: 'Към 24chasa.bg →', color: '#b8321f' },
+    { brand: 'Sportal.bg', text: 'Футбол, тенис и още спорт – новини и резултати.', url: 'https://www.sportal.bg', cta: 'Към sportal.bg →', color: '#1f6f43' },
+    { brand: 'Ozone.bg', text: 'Книги, игри и подаръци онлайн.', url: 'https://www.ozone.bg', cta: 'Към ozone.bg →', color: '#1f5fae' },
+  ],
+  right: [
+    { brand: 'Ozone.bg', text: 'Настолни игри и пъзели за цялото семейство.', url: 'https://www.ozone.bg', cta: 'Разгледай →', color: '#1f5fae' },
+    { brand: '24 Часа', text: 'Анализи, интервюта и коментари.', url: 'https://www.24chasa.bg', cta: 'Прочети →', color: '#b8321f' },
+    { brand: 'Sportal.bg', text: 'Спортът на едно място.', url: 'https://www.sportal.bg', cta: 'Към sportal.bg →', color: '#1f6f43' },
+  ],
+};
+(function renderAds() {
+  for (const side of ['left', 'right']) {
+    const box = $(side === 'left' ? 'adsLeft' : 'adsRight');
+    if (!box) continue;
+    box.innerHTML = '';
+    for (const a of ADS[side]) {
+      const el = document.createElement('a');
+      el.className = 'ad'; el.href = a.url; el.target = '_blank'; el.rel = 'noopener sponsored';
+      el.style.setProperty('--ad', a.color);
+      el.innerHTML = '<div class="tag">Примерна реклама</div><div class="brand"></div><div class="txt"></div><span class="cta"></span>';
+      el.querySelector('.brand').textContent = a.brand;
+      el.querySelector('.txt').textContent = a.text;
+      el.querySelector('.cta').textContent = a.cta;
+      box.appendChild(el);
+    }
+  }
+})();
 $('restartBtn').onclick = () => confirmBox('Рестарт?', 'Всички букви, часовникът и подсказките ще бъдат нулирани.', restartGame);
 $('newBtn').onclick = () => inProgress() ? confirmBox('Нова кръстословица?', 'Текущата игра ще бъде изоставена.', () => newGame(S.size)) : newGame(S ? S.size : 'm');
 $('pauseBtn').onclick = () => { if (!S || S.done) return; S.paused = !S.paused; $('app').classList.toggle('paused', S.paused); updateStats(); save(); };
