@@ -24,6 +24,9 @@
   html, body { margin: 0; background: var(--paper); color: var(--ink); }
   body { font-family: 'PT Sans', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
   .wrap { max-width: 900px; margin: 0 auto; padding: 14px 12px 40px; }
+  .wrap.big { max-width: 1240px; }
+  .btn.zoom { display: none; min-width: 42px; justify-content: center; font-size: 18px; }
+  .wrap.big .btn.zoom { display: inline-flex; }
   header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap;
     border-bottom: 3px double var(--ink); padding-bottom: 8px; }
   h1 { font-family: 'PT Serif', Georgia, serif; font-size: 34px; margin: 0; letter-spacing: .5px; line-height: 1; }
@@ -176,6 +179,7 @@
     <button class="btn" id="pauseBtn">Ⅱ Пауза</button>
     <button class="btn" id="restartBtn">↺ Рестарт</button>
     <button class="btn primary" id="newBtn">Нова кръстословица</button>
+    <button class="btn zoom" id="zoomOut" title="По-малко">−</button><button class="btn zoom" id="zoomIn" title="По-голямо">+</button>
     <button class="btn" id="kbdBtn" title="Екранна клавиатура">⌨</button>
   </div>
   <div class="msg" id="msg"></div>
@@ -562,9 +566,24 @@ function setupGame() {
 }
 
 function cellSize() {
-  const W = S.grid[0].length;
-  const avail = Math.min(document.querySelector('.wrap').clientWidth, 900) - 6;
-  return Math.max(15, Math.min(66, Math.floor((avail - (W - 1) - 5) / W)));
+  const W = S.grid[0].length, H = S.grid.length;
+  const wrap = document.querySelector('.wrap');
+  wrap.classList.toggle('big', W > 12);
+  const avail = wrap.clientWidth - 6;
+  const byW = Math.floor((avail - (W - 1) - 5) / W);
+  if (W <= 12) return Math.max(15, Math.min(66, byW));
+  // голямата решетка: да се побере цялата на екрана (по ширина и височина), като страница от вестник
+  const top = $('board').getBoundingClientRect().top + window.scrollY;
+  const availH = window.innerHeight - 24 - Math.min(top, 260);
+  const byH = Math.floor((availH - (H - 1) - 5) / H);
+  const fit = Math.max(32, Math.min(46, byW, byH));
+  const z = store.get('bigZoom', 0); // стъпки по 4px спрямо „по екрана“
+  return Math.max(24, Math.min(byW, 72, fit + 4 * z));
+}
+function zoomBig(d) {
+  if (!S || S.grid[0].length <= 12) return;
+  store.set('bigZoom', Math.max(-2, Math.min(8, store.get('bigZoom', 0) + d)));
+  buildBoard(); paint();
 }
 
 function buildBoard() {
@@ -817,6 +836,8 @@ function inProgress() { return S && !S.done && S.fill.some((row, r) => row.some(
 
 $('board').addEventListener('click', onBoardClick);
 $('hintBtn').onclick = hint;
+$('zoomOut').onclick = () => zoomBig(-1);
+$('zoomIn').onclick = () => zoomBig(1);
 $('restartBtn').onclick = () => confirmBox('Рестарт?', 'Всички букви, часовникът и подсказките ще бъдат нулирани.', restartGame);
 $('newBtn').onclick = () => inProgress() ? confirmBox('Нова кръстословица?', 'Текущата игра ще бъде изоставена.', () => newGame(S.size)) : newGame(S ? S.size : 'm');
 $('pauseBtn').onclick = () => { if (!S || S.done) return; S.paused = !S.paused; $('app').classList.toggle('paused', S.paused); updateStats(); save(); };
