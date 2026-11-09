@@ -28,25 +28,28 @@
   /* страница с реклами отстрани */
   .page { display: flex; justify-content: center; align-items: flex-start; gap: 18px; padding: 0 10px; }
   .page > .wrap { flex: 1 1 auto; min-width: 0; margin: 0; }
-  .ads { flex: 0 0 190px; position: sticky; top: 14px; display: flex; flex-direction: column; gap: 12px; padding-top: 14px; }
-  .ad { display: block; text-decoration: none; color: var(--ink); background: #fffdf8; border: 1.5px solid var(--ink);
+  .side-col { flex: 0 0 190px; position: sticky; top: 14px; display: flex; flex-direction: column; gap: 12px; padding-top: 14px; }
+  .promo { display: block; text-decoration: none; color: var(--ink); background: #fffdf8; border: 1.5px solid var(--ink);
     border-radius: 8px; padding: 12px 12px 10px; border-top: 6px solid var(--ad, #1c1b19); transition: transform .12s; }
-  .ad:hover { transform: translateY(-2px); }
-  .ad .tag { font: 700 10px 'PT Sans Narrow', sans-serif; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); }
-  .ad .brand { font: 700 21px 'PT Serif', Georgia, serif; margin: 4px 0 6px; line-height: 1.05; }
-  .ad .txt { font-size: 14px; line-height: 1.35; }
-  .ad .cta { display: inline-block; margin-top: 9px; font-weight: 700; font-size: 13px; color: var(--ad, #1c1b19); }
+  .promo:hover { transform: translateY(-2px); }
+  .promo.promo-img { padding: 0; overflow: hidden; border-top-width: 1.5px; background: #1f1f1f; }
+  .promo.promo-img img { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; }
+  .promo.promo-img .cap { background: #1f1f1f; color: #fff; text-align: center; font: 700 16px 'PT Sans', sans-serif; padding: 8px 6px 9px; letter-spacing: .3px; }
+  .promo .tag { font: 700 10px 'PT Sans Narrow', sans-serif; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); }
+  .promo .brand { font: 700 21px 'PT Serif', Georgia, serif; margin: 4px 0 6px; line-height: 1.05; }
+  .promo .txt { font-size: 14px; line-height: 1.35; }
+  .promo .cta { display: inline-block; margin-top: 9px; font-weight: 700; font-size: 13px; color: var(--ad, #1c1b19); }
   @media (max-width: 1280px) {
     .page { flex-direction: column; align-items: stretch; }
     .page > .wrap { width: 100%; margin: 0 auto; }
-    .ads { position: static; flex: none; flex-direction: row; flex-wrap: wrap; justify-content: center; max-width: 900px; margin: 0 auto; padding: 0 12px 12px; }
-    .ads .ad { flex: 1 1 240px; max-width: 300px; }
-    .ads.left { order: 2; } .page > .wrap { order: 1; } .ads.right { order: 3; padding-bottom: 30px; }
+    .side-col { position: static; flex: none; flex-direction: row; flex-wrap: wrap; justify-content: center; max-width: 900px; margin: 0 auto; padding: 0 12px 12px; }
+    .side-col .promo { flex: 1 1 240px; max-width: 300px; }
+    .side-col.left { order: 2; } .page > .wrap { order: 1; } .side-col.right { order: 3; padding-bottom: 30px; }
   }
   /* режим „цял екран“ */
   body:not(.focus) .fs-only { display: none !important; }
   body.focus .fs-only { display: inline-flex; }
-  body.focus .ads, body.focus header, body.focus .stats, body.focus .help, body.focus .account-bar { display: none !important; }
+  body.focus .side-col, body.focus header, body.focus .stats, body.focus .help, body.focus .account-bar { display: none !important; }
   body.focus .page { padding: 0; display: block; }
   body.focus .wrap { max-width: none; padding: 6px 8px 8px; }
   body.focus .cluebar { position: sticky; top: 0; z-index: 20; margin-bottom: 6px; }
@@ -180,7 +183,7 @@
 <style>.auth-gate{position:fixed;inset:0;background:#f5f1e8;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}.auth-gate[hidden],.account-bar[hidden]{display:none}.auth-panel{width:min(100%,390px);padding:28px;border:2px solid #1c1b19;border-radius:10px;background:#fffdf8;text-align:center;font-family:system-ui}.auth-panel input{display:block;width:100%;padding:12px;margin:10px 0;border:1px solid #888;border-radius:5px;font-size:16px}.auth-panel button,.account-bar button{padding:10px 16px;border-radius:5px;cursor:pointer}.auth-panel #authSubmit{width:100%;background:#1c1b19;color:white;border:0}.auth-panel #authSwitch{border:0;background:none;text-decoration:underline}.auth-panel #authError{color:#b8321f}.account-bar{max-width:900px;margin:8px auto;display:flex;gap:12px;align-items:center;justify-content:flex-end;padding:0 12px;font:14px system-ui}.account-bar #syncStatus{color:#6d675c}</style></head>
 <body><div id="authGate" class="auth-gate"><div class="auth-panel"><h2>Кръстословици</h2><p>Влезте в профила си, за да запазвате прогреса си на всички устройства.</p><form id="authForm"><input id="authEmail" type="email" placeholder="Имейл" autocomplete="email" required maxlength="254"><input id="authPassword" type="password" placeholder="Парола (поне 10 символа)" autocomplete="current-password" required minlength="10"><button id="authSubmit" type="submit">Вход</button></form><button id="authSwitch" type="button">Нямате профил? Регистрация</button><p id="authError" role="alert"></p></div></div><div id="accountBar" class="account-bar" hidden><span id="accountName"></span><button id="cloudSaveBtn" type="button">☁ Запази</button><button id="logoutBtn">Изход</button><span id="syncStatus" aria-live="polite"></span></div>
 <div class="page">
-<aside class="ads left" id="adsLeft" aria-label="Реклами"></aside>
+<aside class="side-col left" id="promoLeft" aria-label="Партньори"></aside>
 <div class="wrap" id="app">
   <header>
     <h1>Вестник „Трета Възраст“<small>Скандинавски кръстословици</small></h1>
@@ -225,7 +228,7 @@
     Имате <b>3 подсказки</b> за една игра, всяка открива една буква. <b>Рестарт</b> изчиства решетката, часовника и подсказките.
   </div>
 </div>
-<aside class="ads right" id="adsRight" aria-label="Реклами"></aside>
+<aside class="side-col right" id="promoRight" aria-label="Партньори"></aside>
 </div>
 
 <div class="modal-bg" id="winModal">
@@ -914,20 +917,29 @@ const ADS = {
     { brand: 'Ozone.bg', text: 'Книги, игри и подаръци онлайн.', url: 'https://www.ozone.bg', cta: 'Към ozone.bg →', color: '#1f5fae' },
   ],
   right: [
-    { brand: 'Ozone.bg', text: 'Настолни игри и пъзели за цялото семейство.', url: 'https://www.ozone.bg', cta: 'Разгледай →', color: '#1f5fae' },
+    { brand: 'ozone.bg', img: 'https://cdn.ozone.bg/media/slider/image/2026/10/os_main_500h500_1f1f1f.jpg', url: 'https://www.ozone.bg' },
     { brand: '24 Часа', text: 'Анализи, интервюта и коментари.', url: 'https://www.24chasa.bg', cta: 'Прочети →', color: '#b8321f' },
     { brand: 'Sportal.bg', text: 'Спортът на едно място.', url: 'https://www.sportal.bg', cta: 'Към sportal.bg →', color: '#1f6f43' },
   ],
 };
 (function renderAds() {
   for (const side of ['left', 'right']) {
-    const box = $(side === 'left' ? 'adsLeft' : 'adsRight');
+    const box = $(side === 'left' ? 'promoLeft' : 'promoRight');
     if (!box) continue;
     box.innerHTML = '';
     for (const a of ADS[side]) {
       const el = document.createElement('a');
-      el.className = 'ad'; el.href = a.url; el.target = '_blank'; el.rel = 'noopener sponsored';
+      el.className = 'promo'; el.href = a.url; el.target = '_blank'; el.rel = 'noopener';
       el.style.setProperty('--ad', a.color);
+      if (a.img) {
+        el.classList.add('promo-img');
+        el.innerHTML = '<img alt=""><div class="cap"></div>';
+        el.querySelector('img').src = a.img;
+        el.querySelector('img').alt = a.brand;
+        el.querySelector('.cap').textContent = a.brand;
+        box.appendChild(el);
+        continue;
+      }
       el.innerHTML = '<div class="tag">Примерна реклама</div><div class="brand"></div><div class="txt"></div><span class="cta"></span>';
       el.querySelector('.brand').textContent = a.brand;
       el.querySelector('.txt').textContent = a.text;
