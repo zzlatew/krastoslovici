@@ -483,14 +483,13 @@ function pickPuzzle(size) {
     played.push(i); store.set('played_' + size, played);
     return { pid: size + '-' + i, grid: pool[i].split('|').map(r => r.split('')) };
   }
-  // наборът е изчерпан. Голямата 21×25 се генерира предварително (tools/), затова започваме набора отначало.
-  if (size === 'l') { store.set('played_l', []); return pickPuzzle(size); }
-  // за малка и средна – генерираме нова на живо
+  // Наборът е изчерпан – започваме го отначало. Всички решетки са генерирани предварително
+  // (tools/) и проверени, че думите образуват една свързана мрежа.
+  if (pool.length) { store.set('played_' + size, []); return pickPuzzle(size); }
   const { W, H } = SIZES[size];
-  const p = generatePuzzle(dict, W, H, { timeLimit: size === 'l' ? 9000 : 6000, maxSteps: 30000, maxSingles: W >= 9 ? 4 : 3, clueBias: 0.2 });
-  if (p) return { pid: 'g' + Date.now(), grid: p.grid };
-  store.set('played_' + size, []);
-  return pickPuzzle(size);
+  // резервен вариант при липсващ набор
+  const p = generatePuzzle(dict, W, H, { timeLimit: 20000, maxSteps: 30000, maxSingles: 4, clueBias: 0.2 });
+  return { pid: 'g' + Date.now(), grid: p ? p.grid : [] };
 }
 
 // Визуално прелистване: запазваме само изгледа на старата решетка,
