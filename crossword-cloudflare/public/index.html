@@ -28,6 +28,7 @@
   /* страница с реклами отстрани */
   .page { display: flex; justify-content: center; align-items: flex-start; gap: 18px; padding: 0 10px; }
   .page > .wrap { flex: 1 1 auto; min-width: 0; margin: 0; }
+  .side-col[hidden] { display: none !important; }
   .side-col { flex: 0 0 190px; position: sticky; top: 14px; display: flex; flex-direction: column; gap: 12px; padding-top: 14px; }
   .promo { display: block; text-decoration: none; color: var(--ink); background: #fffdf8; border: 1.5px solid var(--ink);
     border-radius: 8px; padding: 12px 12px 10px; border-top: 6px solid var(--ad, #1c1b19); transition: transform .12s; }
@@ -911,16 +912,10 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && document
 // ---------- реклами (примерни) ----------
 // Сменете текстовете и адресите тук. Цветът е само декоративна ивица.
 const ADS = {
-  left: [
-    { brand: '24 Часа', text: 'Новините от България и света – всеки ден.', url: 'https://www.24chasa.bg', cta: 'Към 24chasa.bg →', color: '#b8321f' },
-    { brand: 'Sportal.bg', text: 'Футбол, тенис и още спорт – новини и резултати.', url: 'https://www.sportal.bg', cta: 'Към sportal.bg →', color: '#1f6f43' },
-    { brand: 'Ozone.bg', text: 'Книги, игри и подаръци онлайн.', url: 'https://www.ozone.bg', cta: 'Към ozone.bg →', color: '#1f5fae' },
-  ],
+  left: [],
   right: [
     { brand: 'ozone.bg', img: 'https://cdn.ozone.bg/media/slider/image/2026/10/os_main_500h500_1f1f1f.jpg', url: 'https://www.ozone.bg' },
     { brand: 'Очни капки', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhVwI0qiCggI4ICa-xmqfQfJ9CeVuVdDpBkdcChMEwu0DfeypwjwqMAns&s=10' },
-    { brand: '24 Часа', text: 'Анализи, интервюта и коментари.', url: 'https://www.24chasa.bg', cta: 'Прочети →', color: '#b8321f' },
-    { brand: 'Sportal.bg', text: 'Спортът на едно място.', url: 'https://www.sportal.bg', cta: 'Към sportal.bg →', color: '#1f6f43' },
   ],
 };
 (function renderAds() {
@@ -928,6 +923,7 @@ const ADS = {
     const box = $(side === 'left' ? 'promoLeft' : 'promoRight');
     if (!box) continue;
     box.innerHTML = '';
+    box.hidden = !ADS[side].length;
     for (const a of ADS[side]) {
       const el = document.createElement(a.url ? 'a' : 'div');
       el.className = 'promo';
