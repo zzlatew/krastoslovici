@@ -33,7 +33,7 @@
     border-radius: 8px; padding: 12px 12px 10px; border-top: 6px solid var(--ad, #1c1b19); transition: transform .12s; }
   .promo:hover { transform: translateY(-2px); }
   .promo.promo-img { padding: 0; overflow: hidden; border-top-width: 1.5px; background: #1f1f1f; }
-  .promo.promo-img img { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; }
+  .promo.promo-img img { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; background: #fff; }
   .promo.promo-img .cap { background: #1f1f1f; color: #fff; text-align: center; font: 700 16px 'PT Sans', sans-serif; padding: 8px 6px 9px; letter-spacing: .3px; }
   .promo .tag { font: 700 10px 'PT Sans Narrow', sans-serif; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); }
   .promo .brand { font: 700 21px 'PT Serif', Georgia, serif; margin: 4px 0 6px; line-height: 1.05; }
@@ -918,6 +918,7 @@ const ADS = {
   ],
   right: [
     { brand: 'ozone.bg', img: 'https://cdn.ozone.bg/media/slider/image/2026/10/os_main_500h500_1f1f1f.jpg', url: 'https://www.ozone.bg' },
+    { brand: 'Очни капки', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhVwI0qiCggI4ICa-xmqfQfJ9CeVuVdDpBkdcChMEwu0DfeypwjwqMAns&s=10' },
     { brand: '24 Часа', text: 'Анализи, интервюта и коментари.', url: 'https://www.24chasa.bg', cta: 'Прочети →', color: '#b8321f' },
     { brand: 'Sportal.bg', text: 'Спортът на едно място.', url: 'https://www.sportal.bg', cta: 'Към sportal.bg →', color: '#1f6f43' },
   ],
@@ -928,8 +929,9 @@ const ADS = {
     if (!box) continue;
     box.innerHTML = '';
     for (const a of ADS[side]) {
-      const el = document.createElement('a');
-      el.className = 'promo'; el.href = a.url; el.target = '_blank'; el.rel = 'noopener';
+      const el = document.createElement(a.url ? 'a' : 'div');
+      el.className = 'promo';
+      if (a.url) { el.href = a.url; el.target = '_blank'; el.rel = 'noopener'; }
       el.style.setProperty('--ad', a.color);
       if (a.img) {
         el.classList.add('promo-img');
