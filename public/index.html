@@ -484,7 +484,6 @@ if (typeof module !== 'undefined') module.exports = { buildDict, generate, gener
 // Речникът се зарежда от отделния статичен файл dictionary.js.
 const DICT_TEXT = (window.CROSSWORD_DICTIONARY || []).map(e => e.word + "=" + e.clues.join(";")).join("\n");
 const POOLS = window.CROSSWORD_POOLS || { s: [], m: [], l: [] };
-const DATASET_VERSION = window.CROSSWORD_DATASET_VERSION || 'legacy';
 const SIZES = { s: { W: 7, H: 9, name: 'Малка' }, m: { W: 8, H: 10, name: 'Средна' }, l: { W: 21, H: 25, name: 'Голяма' } };
 const MAX_HINTS = 3;
 const CLUE = '#';
@@ -501,15 +500,6 @@ let sel = null;         // {r,c,dir}
 let timerId = null;
 
 function hash(s) { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
-
-function isCurrentPuzzle(game) {
-  if (!game || !['s', 'm', 'l'].includes(game.size) || typeof game.pid !== 'string') return false;
-  if (game.datasetVersion !== DATASET_VERSION || !game.pid.startsWith(game.size + '-')) return false;
-  const index = Number(game.pid.slice(2));
-  const encoded = POOLS[game.size]?.[index];
-  if (!Number.isInteger(index) || !encoded || !Array.isArray(game.grid)) return false;
-  return game.grid.map(row => Array.isArray(row) ? row.join('') : '').join('|') === encoded;
-}
 
 function entriesFromGrid(g, pid) {
   const H = g.length, W = g[0].length, out = [];
@@ -574,7 +564,7 @@ function newGame(size) {
   $('loading').classList.add('show');
   setTimeout(() => {
     const pz = pickPuzzle(size);
-    S = { size, pid: pz.pid, datasetVersion: DATASET_VERSION, grid: pz.grid, fill: pz.grid.map(r => r.map(x => x === CLUE ? CLUE : '')), hinted: [],
+    S = { size, pid: pz.pid, grid: pz.grid, fill: pz.grid.map(r => r.map(x => x === CLUE ? CLUE : '')), hinted: [],
           hintsLeft: MAX_HINTS, elapsed: 0, done: false, paused: false };
     sel = null;
     $('loading').classList.remove('show');
