@@ -3,6 +3,7 @@
 # Scandinavian-crossword data format. Blank answers (a lone "?") are skipped.
 
 require 'json'
+require 'digest'
 
 source = ARGV.fetch(0)
 root = File.expand_path('..', __dir__)
@@ -105,6 +106,7 @@ end
 
 dictionary_json = JSON.generate(dictionary)
 pools_json = JSON.generate(pools)
+dataset_version = "questions-#{Digest::SHA256.hexdigest(dictionary_json + pools_json)[0, 12]}"
 
 File.write(File.join(root, 'public', 'dictionary.js'),
            "/* Въпроси и отговори, импортирани от krastoslovici_questions.txt. */\n" \
@@ -112,6 +114,7 @@ File.write(File.join(root, 'public', 'dictionary.js'),
 File.write(File.join(root, 'src', 'pools.json'), pools_json + "\n")
 File.write(File.join(root, 'public', 'pools.js'),
            "/* Решетки, импортирани от krastoslovici_questions.txt. */\n" \
+           "window.CROSSWORD_DATASET_VERSION = #{JSON.generate(dataset_version)};\n" \
            "window.CROSSWORD_POOLS = #{pools_json};\n")
 
 confirmed = entries.count { |entry| !entry[:tentative] }
